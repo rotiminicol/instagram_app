@@ -118,11 +118,11 @@ const Home = () => {
       </header>
       
       <div className="pt-16 px-0">
-        <ScrollArea className="w-full h-20 whitespace-nowrap">
-          <div className="px-4 py-4 border-b border-gray-200/50 flex space-x-4">
+        <ScrollArea className="w-full h-[100px]">
+          <div className="px-4 py-4 flex space-x-6 pb-3">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-              <div key={item} className="flex flex-col items-center space-y-1 animate-fade-in" style={{animationDelay: `${item * 0.1}s`}}>
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-pink-600 p-[2px] hover-scale">
+              <Link key={item} to={`/story/${item}`} className="flex flex-col items-center space-y-1 animate-fade-in hover-scale" style={{animationDelay: `${item * 0.1}s`}}>
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-pink-600 p-[2px] flex-shrink-0">
                   <div className="bg-white rounded-full w-full h-full p-[2px]">
                     <img
                       src={`https://images.unsplash.com/photo-${1507000000000 + item * 1000000}?w=50&h=50&fit=crop&crop=face`}
@@ -132,7 +132,7 @@ const Home = () => {
                   </div>
                 </div>
                 <span className="text-xs">user_{item}</span>
-              </div>
+              </Link>
             ))}
           </div>
         </ScrollArea>
