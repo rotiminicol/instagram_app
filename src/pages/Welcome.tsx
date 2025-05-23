@@ -6,10 +6,13 @@ const Welcome = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      <div className="flex-1 flex flex-col items-center justify-center px-8">
-        <div className="w-24 h-24 mb-8">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div className="h-screen flex flex-col bg-white overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-purple-100 to-transparent"></div>
+      
+      <div className="flex-1 flex flex-col items-center justify-center px-8 relative z-10 animate-fade-in">
+        <div className="w-32 h-32 mb-10 relative card-3d">
+          <div className="absolute -inset-4 bg-gradient-to-tr from-purple-300 to-pink-300 blur-xl opacity-60 rounded-full"></div>
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
             <path
               fillRule="evenodd"
               clipRule="evenodd"
@@ -33,28 +36,39 @@ const Welcome = () => {
             </defs>
           </svg>
         </div>
-        <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        
+        <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent animate-slide-up" style={{animationDelay: '0.2s'}}>
           Welcome to Instagram
         </h1>
-        <p className="text-center text-gray-600 mb-12">
+        
+        <p className="text-center text-gray-600 mb-12 animate-slide-up max-w-xs leading-relaxed" style={{animationDelay: '0.3s'}}>
           Connect with friends, share photos and videos, and discover stories from around the world
         </p>
       </div>
 
-      <div className="p-8 space-y-4">
+      <div className="p-8 space-y-4 relative z-10">
         <Button 
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-6 rounded-lg font-medium"
+          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-7 rounded-xl font-medium shadow-lg shadow-purple-200 animate-slide-up hover:translate-y-[-2px] transition-all duration-300"
+          style={{animationDelay: '0.4s'}}
           onClick={() => navigate("/register")}
         >
           Create Account
         </Button>
+        
         <Button 
           variant="outline"
-          className="w-full py-6 rounded-lg font-medium"
+          className="w-full py-7 rounded-xl font-medium border-gray-300 animate-slide-up hover:bg-gray-50 transition-all duration-300"
+          style={{animationDelay: '0.5s'}}
           onClick={() => navigate("/login")}
         >
           Log In
         </Button>
+      </div>
+      
+      <div className="absolute bottom-0 left-0 right-0">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="opacity-20">
+          <path fill="#8b5cf6" fillOpacity="1" d="M0,224L60,213.3C120,203,240,181,360,181.3C480,181,600,203,720,208C840,213,960,203,1080,176C1200,149,1320,107,1380,85.3L1440,64L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
+        </svg>
       </div>
     </div>
   );

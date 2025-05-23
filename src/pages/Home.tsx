@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { PostFeed } from '@/components/PostFeed';
 import { MobileNavbar } from '@/components/MobileNavbar';
-import { Bell, ChevronDown, MessageCircle, Camera } from 'lucide-react';
+import { Bell, ChevronDown, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Home = () => {
   const [showForYouDropdown, setShowForYouDropdown] = useState(false);
@@ -80,23 +81,23 @@ const Home = () => {
 
   return (
     <div className="pb-20">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200/50">
         <div className="flex items-center justify-between p-4">
           <div className="relative">
             <button 
-              className="flex items-center space-x-1 font-semibold text-lg"
+              className="flex items-center space-x-1 font-semibold text-lg animate-fade-in"
               onClick={() => setShowForYouDropdown(!showForYouDropdown)}
             >
-              <span>For You</span>
-              <ChevronDown className="w-4 h-4" />
+              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">For You</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showForYouDropdown ? 'rotate-180' : ''}`} />
             </button>
             
             {showForYouDropdown && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg p-2 w-40 border border-gray-100 z-50">
+              <div className="absolute top-full left-0 mt-2 bg-white/90 backdrop-blur-md rounded-xl shadow-lg p-2 w-40 border border-gray-100/50 z-50 animate-scale">
                 {forYouOptions.map(option => (
                   <button 
                     key={option} 
-                    className="w-full text-left p-3 hover:bg-gray-100 rounded-md"
+                    className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 hover-scale"
                     onClick={() => setShowForYouDropdown(false)}
                   >
                     {option}
@@ -106,36 +107,35 @@ const Home = () => {
             )}
           </div>
           <div className="flex space-x-5">
-            <Link to="/notifications">
+            <Link to="/notifications" className="transition-transform hover:scale-110">
               <Bell className="w-6 h-6 text-gray-800" />
             </Link>
-            <Link to="/messages">
+            <Link to="/messages" className="transition-transform hover:scale-110">
               <MessageCircle className="w-6 h-6 text-gray-800" />
             </Link>
-            <button className="focus:outline-none">
-              <Camera className="w-6 h-6 text-gray-800" />
-            </button>
           </div>
         </div>
       </header>
       
       <div className="pt-16 px-0">
-        <div className="overflow-x-auto whitespace-nowrap px-4 py-4 border-b border-gray-200 flex space-x-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-            <div key={item} className="flex flex-col items-center space-y-1">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-pink-600 p-[2px]">
-                <div className="bg-white rounded-full w-full h-full p-[2px]">
-                  <img
-                    src={`https://images.unsplash.com/photo-${1507000000000 + item * 1000000}?w=50&h=50&fit=crop&crop=face`}
-                    alt={`Story ${item}`}
-                    className="w-full h-full object-cover rounded-full"
-                  />
+        <ScrollArea className="w-full h-20 whitespace-nowrap">
+          <div className="px-4 py-4 border-b border-gray-200/50 flex space-x-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+              <div key={item} className="flex flex-col items-center space-y-1 animate-fade-in" style={{animationDelay: `${item * 0.1}s`}}>
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-pink-600 p-[2px] hover-scale">
+                  <div className="bg-white rounded-full w-full h-full p-[2px]">
+                    <img
+                      src={`https://images.unsplash.com/photo-${1507000000000 + item * 1000000}?w=50&h=50&fit=crop&crop=face`}
+                      alt={`Story ${item}`}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </div>
                 </div>
+                <span className="text-xs">user_{item}</span>
               </div>
-              <span className="text-xs">user_{item}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </ScrollArea>
         
         <PostFeed 
           posts={posts} 
