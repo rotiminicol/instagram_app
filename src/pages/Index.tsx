@@ -1,9 +1,10 @@
-
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { PostCreator } from '@/components/PostCreator';
 import { PostFeed } from '@/components/PostFeed';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { useDebounce } from 'use-debounce';
 
 const Index = () => {
   const [posts, setPosts] = useState([
@@ -54,6 +55,26 @@ const Index = () => {
     }
   ]);
 
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [debouncedIsCreating] = useDebounce(isCreatingPost, 300);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll({
+    container: containerRef
+  });
+
+  // Dynamic effects based on scroll
+  const headerShadow = useTransform(
+    scrollY,
+    [0, 10],
+    ['0px 2px 4px rgba(0, 0, 0, 0.02)', '0px 4px 12px rgba(0, 0, 0, 0.08)']
+  );
+
+  const headerOpacity = useTransform(
+    scrollY,
+    [0, 50],
+    [1, 0.98]
+  );
+
   const handleLike = (postId: number) => {
     setPosts(posts.map(post => 
       post.id === postId 
@@ -74,64 +95,188 @@ const Index = () => {
     ));
   };
 
-  const handleNewPost = (newPost: any) => {
-    const post = {
-      id: posts.length + 1,
-      user: {
-        username: 'currentuser',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face',
-        verified: false
-      },
-      ...newPost,
-      likes: 0,
-      comments: 0,
-      timestamp: 'now',
-      liked: false,
-      bookmarked: false
-    };
-    setPosts([post, ...posts]);
+  type NewPost = {
+    image: string;
+    caption: string;
+  };
+
+  const handleNewPost = (newPost: NewPost) => {
+    setIsCreatingPost(true);
+    
+    setTimeout(() => {
+      const post = {
+        id: posts.length + 1,
+        user: {
+          username: 'currentuser',
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face',
+          verified: false
+        },
+        ...newPost,
+        likes: 0,
+        comments: 0,
+        timestamp: 'now',
+        liked: false,
+        bookmarked: false
+      };
+      
+      setPosts([post, ...posts]);
+      setIsCreatingPost(false);
+    }, 1500);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      {/* Animated Navbar */}
+      <motion.div
+        style={{
+          boxShadow: headerShadow,
+          opacity: headerOpacity,
+          backdropFilter: 'blur(12px)'
+        }}
+        className="fixed top-0 left-0 right-0 z-50 bg-white/80"
+      >
+        <Navbar />
+      </motion.div>
+
       <div className="flex max-w-6xl mx-auto pt-16">
-        <div className="hidden lg:block w-64 p-4">
+        {/* Sidebar with subtle animation */}
+        <motion.div 
+          className="hidden lg:block w-64 p-4"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
           <Sidebar />
+        </motion.div>
+
+        {/* Main Content */}
+        <div 
+          ref={containerRef}
+          className="flex-1 max-w-2xl mx-auto p-4 overflow-y-auto"
+          style={{ height: 'calc(100vh - 64px)' }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <PostCreator 
+              onPost={handleNewPost} 
+            />
+          </motion.div>
+
+          {/* Loading state for new post */}
+          <AnimatePresence>
+            {debouncedIsCreating && (
+              <motion.div
+                className="bg-white rounded-xl shadow-sm p-4 mb-4 flex items-center justify-center"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                  className="text-blue-500"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"
+                    />
+                  </svg>
+                </motion.div>
+                <span className="ml-2 text-gray-600">Creating your post...</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Post Feed with staggered animations */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <PostFeed 
+              posts={posts} 
+              onLike={handleLike}
+              onBookmark={handleBookmark}
+            />
+          </motion.div>
         </div>
-        <div className="flex-1 max-w-2xl mx-auto p-4">
-          <PostCreator onPost={handleNewPost} />
-          <PostFeed 
-            posts={posts} 
-            onLike={handleLike}
-            onBookmark={handleBookmark}
-          />
-        </div>
-        <div className="hidden xl:block w-80 p-4">
-          <div className="bg-white rounded-lg shadow-sm p-4 sticky top-20">
+
+        {/* Suggestions Sidebar */}
+        <motion.div 
+          className="hidden xl:block w-80 p-4"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <motion.div 
+            className="bg-white rounded-xl shadow-sm p-4 sticky top-20"
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 400 }}
+          >
             <h3 className="font-semibold text-gray-900 mb-4">Suggested for you</h3>
             <div className="space-y-3">
               {[
                 { username: 'alexphoto', name: 'Alex Photography', mutual: '5 mutual friends' },
                 { username: 'foodielove', name: 'Foodie Adventures', mutual: '12 mutual friends' },
                 { username: 'travelbug', name: 'Travel Explorer', mutual: '3 mutual friends' }
-              ].map((user) => (
-                <div key={user.username} className="flex items-center justify-between">
+              ].map((user, index) => (
+                <motion.div 
+                  key={user.username}
+                  className="flex items-center justify-between"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + index * 0.1 }}
+                >
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full"></div>
+                    <motion.div 
+                      className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    />
                     <div>
                       <p className="text-sm font-medium text-gray-900">{user.username}</p>
                       <p className="text-xs text-gray-500">{user.mutual}</p>
                     </div>
                   </div>
-                  <button className="text-blue-500 text-sm font-medium hover:text-blue-600">
+                  <motion.button 
+                    className="text-blue-500 text-sm font-medium hover:text-blue-600"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
                     Follow
-                  </button>
-                </div>
+                  </motion.button>
+                </motion.div>
               ))}
             </div>
-          </div>
-        </div>
+          </motion.div>
+
+          {/* Footer Links */}
+          <motion.div
+            className="mt-4 text-xs text-gray-400 space-y-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <div className="flex flex-wrap gap-2">
+              {['About', 'Help', 'Press', 'API', 'Jobs', 'Privacy', 'Terms', 'Locations'].map((item) => (
+                <motion.a 
+                  key={item}
+                  href="#"
+                  className="hover:underline"
+                  whileHover={{ color: '#000' }}
+                >
+                  {item}
+                </motion.a>
+              ))}
+            </div>
+            <p>© {new Date().getFullYear()} SOCIALAPP</p>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

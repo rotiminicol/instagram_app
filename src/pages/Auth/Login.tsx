@@ -1,78 +1,149 @@
-
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
+import { FcGoogle } from 'react-icons/fc';
+import { FaApple } from 'react-icons/fa';
+
+// Animation variants for the card
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+// Animation variants for form fields
+const formContainer = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const fieldVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+  const navigate = useNavigate();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (usernameOrEmail && password) {
+      localStorage.setItem('authToken', 'dummy-token');
+      navigate('/home');
+    } else {
+      alert('Please fill in all fields');
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    localStorage.setItem('authToken', 'dummy-token');
+    navigate('/home');
+  };
+
+  const handleAppleLogin = () => {
+    localStorage.setItem('authToken', 'dummy-token');
+    navigate('/home');
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-white px-4 py-10">
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="w-full max-w-sm">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent text-center mb-10">
-            Instagram
-          </h1>
-          
-          <form className="space-y-4">
-            <div>
-              <input
-                type="text"
-                placeholder="Username or email"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-            
-            <div>
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-            
-            <div className="text-right">
-              <Link to="/forgot-password" className="text-sm text-blue-500">
-                Forgot password?
-              </Link>
-            </div>
-            
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
+      <motion.div
+        className="w-full max-w-sm rounded-lg bg-white p-8 shadow-lg"
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent text-center mb-6">
+          Instagram
+        </h1>
+        <p className="text-center text-gray-600 mb-6">
+          Log in to see photos and videos from your friends.
+        </p>
+
+        <motion.form
+          variants={formContainer}
+          initial="hidden"
+          animate="visible"
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
+          <motion.div variants={fieldVariants}>
+            <label htmlFor="usernameOrEmail" className="block text-sm font-medium text-gray-700">Username or Email</label>
+            <input
+              id="usernameOrEmail"
+              type="text"
+              value={usernameOrEmail}
+              onChange={(e) => setUsernameOrEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </motion.div>
+
+          <motion.div variants={fieldVariants}>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </motion.div>
+
+          <motion.div variants={fieldVariants}>
             <Button
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              type="submit"
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
             >
               Log In
             </Button>
-          </form>
-          
-          <div className="mt-6 flex items-center">
-            <div className="flex-grow h-px bg-gray-300"></div>
-            <span className="px-4 text-sm text-gray-500">OR</span>
-            <div className="flex-grow h-px bg-gray-300"></div>
-          </div>
-          
-          <button className="mt-6 w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md">
-            <svg className="w-5 h-5" viewBox="0 0 48 48">
-              <path fill="#3b5998" d="M44,24c0,11.046-8.954,20-20,20S4,35.046,4,24S12.954,4,24,4S44,12.954,44,24z"/>
-              <path fill="#fff" d="M28.8,31.2h-3.6v-9h-2.4v-3.6h2.4v-2.4c0-3.305,0.936-5.4,5.4-5.4h3.6v3.6h-2.4c-1.572,0-1.8,0.618-1.8,1.8v2.4h4.2l-0.6,3.6h-3.6V31.2z"/>
-            </svg>
-            <span className="text-sm font-medium">Continue with Facebook</span>
-          </button>
+          </motion.div>
+        </motion.form>
+
+        <div className="my-6 flex items-center">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="mx-4 text-gray-500">OR</span>
+          <div className="flex-grow border-t border-gray-300"></div>
         </div>
-      </div>
-      
-      <div className="border-t border-gray-200 py-4 mt-10">
-        <p className="text-center text-gray-600">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-blue-500">
+
+        <div className="space-y-2">
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
+              onClick={handleGoogleLogin}
+            >
+              <FcGoogle size={20} />
+              <span>Log in with Google</span>
+            </Button>
+          </motion.div>
+
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
+              onClick={handleAppleLogin}
+            >
+              <FaApple size={20} />
+              <span>Log in with Apple</span>
+            </Button>
+          </motion.div>
+        </div>
+
+        <p className="mt-4 text-center text-gray-600">
+          <Link to="/forgot-password" className="text-blue-500 hover:underline">
+            Forgot password?
+          </Link>
+        </p>
+
+        <p className="mt-4 text-center text-gray-600">
+          Don’t have an account?{" "}
+          <Link to="/register" className="text-blue-500 hover:underline">
             Sign up
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 };

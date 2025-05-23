@@ -1,8 +1,8 @@
-
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Edit, Phone, Video, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MobileNavbar } from '@/components/MobileNavbar';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
   id: number;
@@ -26,7 +26,8 @@ interface Conversation {
 const Messages = () => {
   const [activeChat, setActiveChat] = useState<number | null>(null);
   const [messageText, setMessageText] = useState('');
-  
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
   const conversations: Conversation[] = [
     {
       id: 1,
@@ -61,7 +62,7 @@ const Messages = () => {
       unread: false,
     },
   ];
-  
+
   const [chats, setChats] = useState<{ [key: number]: Message[] }>({
     1: [
       { id: 1, text: 'Hey there!', timestamp: '10:30 AM', sent: false },
@@ -80,25 +81,28 @@ const Messages = () => {
       { id: 2, text: 'Let me check and get back to you', timestamp: '2:10 PM', sent: false },
     ],
   });
-  
+
   const sendMessage = (chatId: number) => {
     if (!messageText.trim()) return;
-    
+
     const newMessage: Message = {
       id: chats[chatId]?.length + 1 || 1,
       text: messageText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       sent: true,
     };
-    
+
     setChats({
       ...chats,
       [chatId]: [...(chats[chatId] || []), newMessage],
     });
-    
+
     setMessageText('');
+    setTimeout(() => {
+      chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
+    }, 100);
   };
-  
+
   const selectedChat = conversations.find((chat) => chat.id === activeChat);
 
   return (
@@ -118,7 +122,7 @@ const Messages = () => {
               </button>
             </div>
           </header>
-          
+
           <div className="py-2">
             {conversations.map((conversation) => (
               <button
@@ -180,29 +184,49 @@ const Messages = () => {
               </div>
             </div>
           </header>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {chats[activeChat]?.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sent ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] p-3 rounded-2xl ${
-                    message.sent
-                      ? 'bg-blue-500 text-white rounded-tr-none'
-                      : 'bg-gray-100 text-gray-900 rounded-tl-none'
-                  }`}
+
+          <div
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-3"
+          >
+            <AnimatePresence>
+              {chats[activeChat]?.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={`flex ${message.sent ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p>{message.text}</p>
-                  <p className={`text-xs mt-1 ${message.sent ? 'text-blue-100' : 'text-gray-500'}`}>
-                    {message.timestamp}
-                  </p>
-                </div>
-              </div>
-            ))}
+                  <div
+                    className={`max-w-[80%] p-3 rounded-2xl shadow-md ${
+                      message.sent
+                        ? 'bg-blue-500 text-white rounded-tr-none'
+                        : 'bg-gray-100 text-gray-900 rounded-tl-none'
+                    }`}
+                  >
+                    <p>{message.text}</p>
+                    <p className={`text-xs mt-1 ${message.sent ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {message.timestamp}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {/* Typing indicator */}
+            {selectedChat?.user.online && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center space-x-1"
+              >
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-100"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-200"></div>
+              </motion.div>
+            )}
           </div>
-          
+
           <div className="sticky bottom-16 bg-white border-t border-gray-200 p-3">
             <div className="flex items-center space-x-2">
               <button className="p-2 rounded-full bg-gray-100">
@@ -217,22 +241,21 @@ const Messages = () => {
                 onChange={(e) => setMessageText(e.target.value)}
                 className="flex-1 bg-gray-100 rounded-full px-4 py-2 focus:outline-none"
               />
-              <button
-                onClick={() => activeChat && sendMessage(activeChat)}
-                disabled={!messageText.trim()}
-                className={`p-2 rounded-full ${
-                  messageText.trim() ? 'text-blue-500' : 'text-gray-400'
-                }`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
+              {messageText.trim() && (
+                <button
+                  onClick={() => activeChat && sendMessage(activeChat)}
+                  className="p-2 rounded-full text-blue-500"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </>
       )}
-      
+
       <MobileNavbar />
     </div>
   );
