@@ -1,12 +1,14 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Grid, MessageCircle, Bookmark, Settings } from 'lucide-react';
+import { Grid, Bookmark, Settings, Edit3, Camera } from 'lucide-react';
 import { MobileNavbar } from '@/components/MobileNavbar';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
+  const [showEditProfile, setShowEditProfile] = useState(false);
   
   // Sample profile data
   const profile = {
@@ -28,24 +30,32 @@ const Profile = () => {
   }));
   
   return (
-    <div className="pb-16">
+    <div className="pb-20">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between p-4">
           <h1 className="text-xl font-semibold">{profile.username}</h1>
-          <Link to="/settings">
-            <Settings className="w-6 h-6 text-gray-800" />
-          </Link>
+          <div className="flex items-center space-x-4">
+            <button className="focus:outline-none" onClick={() => setShowEditProfile(true)}>
+              <Edit3 className="w-5 h-5 text-gray-800" />
+            </button>
+            <Link to="/settings">
+              <Settings className="w-5 h-5 text-gray-800" />
+            </Link>
+          </div>
         </div>
       </header>
       
       <div className="pt-16 px-4">
         <div className="flex items-center pb-6">
-          <div className="mr-6">
+          <div className="mr-6 relative">
             <img
               src={profile.avatar}
               alt={profile.username}
-              className="w-20 h-20 rounded-full object-cover"
+              className="w-20 h-20 rounded-full object-cover border border-gray-200"
             />
+            <button className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1">
+              <Camera className="w-4 h-4 text-white" />
+            </button>
           </div>
           <div className="grid grid-cols-3 gap-2 flex-1 text-center">
             <div>
@@ -69,10 +79,39 @@ const Profile = () => {
         </div>
         
         <div className="flex space-x-2 pb-6">
-          <Button className="flex-1">Edit Profile</Button>
-          <Button variant="outline" className="px-4">
-            <MessageCircle className="w-5 h-5" />
+          <Button 
+            variant="outline"
+            className="flex-1 bg-white"
+            onClick={() => setShowEditProfile(true)}
+          >
+            Edit Profile
           </Button>
+          <Button variant="outline" className="px-4 bg-white">
+            Share Profile
+          </Button>
+        </div>
+        
+        <div className="overflow-x-auto whitespace-nowrap py-4 px-2">
+          <div className="flex space-x-4">
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                <span className="text-2xl text-gray-400">+</span>
+              </div>
+              <span className="text-xs mt-1 text-gray-500">New</span>
+            </div>
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="flex flex-col items-center space-y-1">
+                <div className="w-16 h-16 rounded-full border border-gray-200">
+                  <img
+                    src={`https://images.unsplash.com/photo-${1507000000000 + item * 1000000}?w=50&h=50&fit=crop&crop=face`}
+                    alt={`Highlight ${item}`}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                </div>
+                <span className="text-xs">Highlight {item}</span>
+              </div>
+            ))}
+          </div>
         </div>
         
         <div className="flex border-t border-gray-200">
@@ -121,6 +160,70 @@ const Profile = () => {
       </div>
       
       <MobileNavbar />
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
+        <DialogContent className="p-4">
+          <DialogHeader>
+            <DialogTitle className="text-center">Edit Profile</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4 flex flex-col space-y-6">
+            <div className="flex flex-col items-center">
+              <div className="relative mb-2">
+                <img
+                  src={profile.avatar}
+                  alt={profile.username}
+                  className="w-20 h-20 rounded-full object-cover"
+                />
+                <button className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1">
+                  <Camera className="w-4 h-4 text-white" />
+                </button>
+              </div>
+              <button className="text-blue-500 text-sm font-medium">Change Profile Photo</button>
+            </div>
+            
+            <div>
+              <label className="text-sm text-gray-500 mb-1 block">Name</label>
+              <input 
+                type="text"
+                defaultValue={profile.name}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm text-gray-500 mb-1 block">Username</label>
+              <input 
+                type="text"
+                defaultValue={profile.username}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm text-gray-500 mb-1 block">Bio</label>
+              <textarea
+                defaultValue={profile.bio}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm h-20 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              ></textarea>
+            </div>
+            
+            <div>
+              <label className="text-sm text-gray-500 mb-1 block">Website</label>
+              <input 
+                type="text"
+                placeholder="Website"
+                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            
+            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 w-full">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

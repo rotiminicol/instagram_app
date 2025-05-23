@@ -15,6 +15,9 @@ import Settings from "./pages/Settings";
 import Messages from "./pages/Messages";
 import Reels from "./pages/Reels";
 import NotFound from "./pages/NotFound";
+import SplashScreen from "./pages/SplashScreen";
+import Welcome from "./pages/Welcome";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -25,12 +28,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Initial Screens */}
+          <Route index element={<SplashScreen />} />
+          <Route path="/welcome" element={<Welcome />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
           {/* App Routes */}
-          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/search" element={<Search />} />
           <Route path="/create" element={<CreatePost />} />
           <Route path="/notifications" element={<Notifications />} />

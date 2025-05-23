@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import { PostFeed } from '@/components/PostFeed';
 import { MobileNavbar } from '@/components/MobileNavbar';
-import { Camera, MessageCircle } from 'lucide-react';
+import { Bell, ChevronDown, MessageCircle, Camera } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Home = () => {
+  const [showForYouDropdown, setShowForYouDropdown] = useState(false);
   const [posts, setPosts] = useState([
     {
       id: 1,
@@ -73,19 +75,45 @@ const Home = () => {
     ));
   };
 
+  // Options for "For You" dropdown
+  const forYouOptions = ['Following', 'Favorites'];
+
   return (
-    <div className="pb-16">
+    <div className="pb-20">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between p-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Instagram
-          </h1>
-          <div className="flex space-x-4">
+          <div className="relative">
+            <button 
+              className="flex items-center space-x-1 font-semibold text-lg"
+              onClick={() => setShowForYouDropdown(!showForYouDropdown)}
+            >
+              <span>For You</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            
+            {showForYouDropdown && (
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg p-2 w-40 border border-gray-100 z-50">
+                {forYouOptions.map(option => (
+                  <button 
+                    key={option} 
+                    className="w-full text-left p-3 hover:bg-gray-100 rounded-md"
+                    onClick={() => setShowForYouDropdown(false)}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex space-x-5">
+            <Link to="/notifications">
+              <Bell className="w-6 h-6 text-gray-800" />
+            </Link>
+            <Link to="/messages">
+              <MessageCircle className="w-6 h-6 text-gray-800" />
+            </Link>
             <button className="focus:outline-none">
               <Camera className="w-6 h-6 text-gray-800" />
-            </button>
-            <button className="focus:outline-none">
-              <MessageCircle className="w-6 h-6 text-gray-800" />
             </button>
           </div>
         </div>
