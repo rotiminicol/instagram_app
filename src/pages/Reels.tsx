@@ -1,6 +1,6 @@
 
 import { useState, useRef } from 'react';
-import { Heart, MessageCircle, Share2, Music } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Music, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MobileNavbar } from '@/components/MobileNavbar';
 
