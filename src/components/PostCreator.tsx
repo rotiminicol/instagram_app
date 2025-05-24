@@ -1,7 +1,7 @@
+
 import { useState, useCallback } from "react";
 import { Image, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { debounce } from "lodash";
 
 interface PostCreatorProps {
   onPost: (post: { image: string; caption: string }) => void;
@@ -41,10 +41,9 @@ export const PostCreator = ({ onPost }: PostCreatorProps) => {
     }
   }, []);
 
-  const debouncedCaptionChange = useCallback(
-    debounce((value: string) => setCaption(value), 300),
-    []
-  );
+  const handleCaptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCaption(e.target.value);
+  };
 
   const handlePost = () => {
     if (selectedImage && caption.trim()) {
@@ -81,7 +80,7 @@ export const PostCreator = ({ onPost }: PostCreatorProps) => {
 
       <textarea
         value={caption}
-        onChange={(e) => debouncedCaptionChange(e.target.value)}
+        onChange={handleCaptionChange}
         placeholder="What's happening?"
         className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
         rows={3}
