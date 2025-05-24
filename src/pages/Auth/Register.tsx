@@ -4,14 +4,13 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { FcGoogle } from 'react-icons/fc';
 import { FaApple } from 'react-icons/fa';
+import axios from 'axios';
 
-// Animation variants for the card
 const cardVariants = {
   hidden: { opacity: 0, scale: 0.9 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-// Animation variants for form fields
 const formContainer = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -24,29 +23,47 @@ const fieldVariants = {
 
 const Register = () => {
   const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && fullName && username && password) {
-      localStorage.setItem('authToken', 'dummy-token');
-      navigate('/home');
-    } else {
-      alert('Please fill in all fields');
+    if (!email || !name || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Attempting signup with:', { email, name, password });
+      const response = await axios.post('https://x8ki-letl-twmt.n7.xano.io/api:9Y3R7lds/auth/signup', {
+        email,
+        name,
+        password,
+      });
+      console.log('Signup response:', response.data);
+      const { authToken } = response.data;
+      localStorage.setItem('token', authToken);
+      navigate('/onboarding');
+    } catch (err: any) {
+      console.error('Signup error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleRegister = () => {
-    localStorage.setItem('authToken', 'dummy-token');
-    navigate('/home');
+    alert('Google signup not implemented. Configure OAuth in Xano at /api:9Y3R7lds/auth/google.');
   };
 
   const handleAppleRegister = () => {
-    localStorage.setItem('authToken', 'dummy-token');
-    navigate('/home');
+    alert('Apple signup not implemented. Configure OAuth in Xano at /api:9Y3R7lds/auth/apple.');
   };
 
   return (
@@ -62,7 +79,17 @@ const Register = () => {
         </h1>
         <p className="text-center text-gray-600 mb-6">
           Sign up to see photos and videos from your friends.
-        </p>
+        </p>  
+
+        {error && (
+          <motion.p
+            className="text-center text-red-500 mb-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {error}
+          </motion.p>
+        )}
 
         <div className="space-y-2 mb-6">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -70,6 +97,7 @@ const Register = () => {
               variant="outline"
               className="w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
               onClick={handleGoogleRegister}
+              disabled={loading}
             >
               <FcGoogle size={20} />
               <span>Sign up with Google</span>
@@ -81,6 +109,7 @@ const Register = () => {
               variant="outline"
               className="w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
               onClick={handleAppleRegister}
+              disabled={loading}
             >
               <FaApple size={20} />
               <span>Sign up with Apple</span>
@@ -109,28 +138,19 @@ const Register = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={loading}
             />
           </motion.div>
 
           <motion.div variants={fieldVariants}>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">Full Name</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name</label>
             <input
-              id="fullName"
+              id="name"
               type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </motion.div>
-
-          <motion.div variants={fieldVariants}>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={loading}
             />
           </motion.div>
 
@@ -142,6 +162,7 @@ const Register = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={loading}
             />
           </motion.div>
 
@@ -149,8 +170,9 @@ const Register = () => {
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+              disabled={loading}
             >
-              Sign Up
+              {loading ? 'Signing up...' : 'Sign Up'}
             </Button>
           </motion.div>
         </motion.form>

@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Check, ArrowRight, Camera } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import socialAPI from '../api/socialAPI';
 
-// Animation variants for steps
 const stepVariants = {
   hidden: { opacity: 0, x: 100 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: "easeOut" } },
@@ -16,10 +16,19 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [suggestedUsers, setSuggestedUsers] = useState<{ id: number; username: string; avatar: string; followed: boolean }[]>([
+    // Placeholder users until /users/suggested endpoint is added
+    { id: 1, username: 'user1', avatar: 'https://picsum.photos/100/100?random=1', followed: false },
+    { id: 2, username: 'user2', avatar: 'https://picsum.photos/100/100?random=2', followed: false },
+    { id: 3, username: 'user3', avatar: 'https://picsum.photos/100/100?random=3', followed: false },
+  ]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const interests = [
     "Photography", "Travel", "Food", "Fashion",
-    "Fitness", "Music", "Art", "Gaming", 
+    "Fitness", "Music", "Art", "Gaming",
     "Technology", "Nature", "Sports", "Beauty"
   ];
 
@@ -31,11 +40,74 @@ const Onboarding = () => {
     }
   };
 
-  const handleNext = () => {
-    if (step < 3) {
-      setStep(step + 1);
-    } else {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProfilePhoto(file);
+      setLoading(true);
+      setError('');
+
+      const formData = new FormData();
+      formData.append('profile_photo', file);
+
+      try {
+        console.log('Uploading profile photo to /auth/me...');
+        await socialAPI.patch('/auth/me', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        console.log('Profile photo uploaded');
+      } catch (err: any) {
+        console.error('Photo upload error:', err.response?.data || err.message);
+        setError(err.response?.data?.message || 'Failed to upload profile photo.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleInterestsSave = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Saving interests to /auth/me:', selectedInterests);
+      await socialAPI.patch('/auth/me', { interests: selectedInterests });
+      console.log('Interests saved');
+    } catch (err: any) {
+      console.error('Interests save error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Failed to save interests.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFollow = async (userId: number) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Following user:', userId);
+      await socialAPI.post('/follow', { followee_id: userId });
+      setSuggestedUsers(suggestedUsers.map(user =>
+        user.id === userId ? { ...user, followed: true } : user
+      ));
+      console.log('User followed');
+    } catch (err: any) {
+      console.error('Follow error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Failed to follow user.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNext = async () => {
+    if (step === 2) {
+      await handleInterestsSave();
+    }
+    if (step === 3) {
       navigate('/home');
+    } else {
+      setStep(step + 1);
     }
   };
 
@@ -44,7 +116,7 @@ const Onboarding = () => {
       <div className="p-4 flex items-center justify-between">
         <div className="flex space-x-2">
           {[1, 2, 3].map((i) => (
-            <motion.div 
+            <motion.div
               key={i}
               className={`h-1 rounded-full ${i <= step ? 'bg-gradient-to-r from-purple-600 to-pink-600' : 'bg-gray-200'} ${i < 3 ? 'w-12' : 'w-12'}`}
               initial={{ width: 0 }}
@@ -53,13 +125,24 @@ const Onboarding = () => {
             ></motion.div>
           ))}
         </div>
-        <button 
+        <button
           className="text-gray-500 hover:text-gray-800 transition-colors"
           onClick={() => navigate('/home')}
+          disabled={loading}
         >
           Skip
         </button>
       </div>
+
+      {error && (
+        <motion.p
+          className="text-center text-red-500 mx-6 mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {error}
+        </motion.p>
+      )}
 
       <div className="flex-1 flex flex-col px-6 py-8">
         <AnimatePresence mode="wait">
@@ -80,11 +163,18 @@ const Onboarding = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                 >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    disabled={loading}
+                  />
                   <button className="absolute inset-0 flex items-center justify-center bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                     <Camera className="w-8 h-8" />
                   </button>
                   <div className="w-32 h-32 rounded-full bg-gray-50 flex items-center justify-center border-2 border-dashed border-gray-300">
-                    <span className="text-purple-600 font-medium">Add Photo</span>
+                    <span className="text-purple-600 font-medium">{profilePhoto ? 'Photo Selected' : 'Add Photo'}</span>
                   </div>
                 </motion.div>
               </div>
@@ -114,10 +204,10 @@ const Onboarding = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Card 
+                      <Card
                         className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-300 ${
-                          selectedInterests.includes(interest) 
-                            ? 'border-purple-600 bg-purple-50 shadow-md shadow-purple-100' 
+                          selectedInterests.includes(interest)
+                            ? 'border-purple-600 bg-purple-50 shadow-md shadow-purple-100'
                             : 'border-gray-200'
                         }`}
                         onClick={() => toggleInterest(interest)}
@@ -148,33 +238,35 @@ const Onboarding = () => {
               <p className="text-gray-500 mb-8">Follow people to see their photos and videos in your feed</p>
               
               <div className="space-y-5 mb-10">
-                {[1, 2, 3, 4, 5].map((i) => (
+                {suggestedUsers.map((user) => (
                   <motion.div
-                    key={i}
+                    key={user.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
+                    transition={{ delay: user.id * 0.1 }}
                   >
                     <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                       <div className="flex items-center">
                         <div className="relative">
                           <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-purple-300 to-pink-300 opacity-60 blur-sm" />
-                          <img 
-                            src={`https://images.unsplash.com/photo-${1500000000 + i * 10000000}?w=50&h=50&fit=crop&crop=face`}
-                            alt={`User ${i}`} 
-                            className="w-12 h-12 rounded-full object-cover border-2 border-white relative z-10" 
+                          <img
+                            src={user.avatar}
+                            alt={user.username}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-white relative z-10"
                           />
                         </div>
                         <div className="ml-3">
-                          <p className="font-medium text-gray-900">user_{i}</p>
+                          <p className="font-medium text-gray-900">{user.username}</p>
                           <p className="text-xs text-gray-500">Suggested for you</p>
                         </div>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        className="text-sm h-9 rounded-full px-5 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-300 transition-colors"
+                      <Button
+                        variant="outline"
+                        className={`text-sm h-9 rounded-full px-5 ${user.followed ? 'bg-purple-50 text-purple-600 border-purple-300' : 'hover:bg-purple-50 hover:text-purple-600 hover:border-purple-300'} transition-colors`}
+                        onClick={() => handleFollow(user.id)}
+                        disabled={loading || user.followed}
                       >
-                        Follow
+                        {user.followed ? 'Following' : 'Follow'}
                       </Button>
                     </div>
                   </motion.div>
@@ -187,9 +279,10 @@ const Onboarding = () => {
 
       <div className="p-6">
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button 
+          <Button
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-6 rounded-xl font-medium shadow-lg shadow-purple-100 transition-all duration-300"
             onClick={handleNext}
+            disabled={loading}
           >
             {step === 3 ? (
               "Get Started"

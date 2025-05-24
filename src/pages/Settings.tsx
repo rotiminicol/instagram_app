@@ -1,6 +1,6 @@
 import { useState, memo } from "react";
 import { ArrowLeft, ChevronRight, LogOut } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SettingsItem {
@@ -15,6 +15,9 @@ interface SettingsGroup {
 
 const Settings = () => {
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const settingsGroups: SettingsGroup[] = [
     {
@@ -44,10 +47,19 @@ const Settings = () => {
   ];
 
   const handleLogout = () => {
-    // Simulate logout action
-    console.log("Logging out...");
-    setLogoutModalOpen(false);
-    // Redirect or perform actual logout logic here
+    setLoading(true);
+    setError('');
+
+    try {
+      localStorage.removeItem('token');
+      setLogoutModalOpen(false);
+      navigate('/welcome');
+    } catch (err: any) {
+      console.error('Logout error:', err.message);
+      setError('Logout failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,6 +83,16 @@ const Settings = () => {
       </header>
 
       <div className="pt-16 py-4 space-y-6">
+        {error && (
+          <motion.p
+            className="text-center text-red-500 mx-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {error}
+          </motion.p>
+        )}
+
         {settingsGroups.map((group, index) => (
           <motion.div
             key={group.title}
@@ -106,6 +128,7 @@ const Settings = () => {
             onClick={() => setLogoutModalOpen(true)}
             className="w-full text-left px-4 py-4 text-red-500 font-medium hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
             aria-label="Log out"
+            disabled={loading}
           >
             <LogOut className="w-5 h-5 inline-block mr-2" />
             Log Out
@@ -139,6 +162,7 @@ const Settings = () => {
                   onClick={() => setLogoutModalOpen(false)}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
                   aria-label="Cancel logout"
+                  disabled={loading}
                 >
                   Cancel
                 </motion.button>
@@ -148,8 +172,9 @@ const Settings = () => {
                   onClick={handleLogout}
                   className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                   aria-label="Confirm logout"
+                  disabled={loading}
                 >
-                  Log Out
+                  {loading ? 'Logging out...' : 'Log Out'}
                 </motion.button>
               </div>
             </motion.div>

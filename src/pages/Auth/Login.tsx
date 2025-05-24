@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { FcGoogle } from 'react-icons/fc';
 import { FaApple } from 'react-icons/fa';
+import axios from 'axios';
 
 // Animation variants for the card
 const cardVariants = {
@@ -23,28 +24,46 @@ const fieldVariants = {
 };
 
 const Login = () => {
-  const [usernameOrEmail, setUsernameOrEmail] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (usernameOrEmail && password) {
-      localStorage.setItem('authToken', 'dummy-token');
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Attempting login with:', { email, password });
+      const response = await axios.post('https://x8ki-letl-twmt.n7.xano.io/api:9Y3R7lds/auth/login', {
+        email,
+        password,
+      });
+      console.log('Login response:', response.data);
+      const { authToken } = response.data; // Xano typically returns authToken
+      localStorage.setItem('token', authToken);
       navigate('/home');
-    } else {
-      alert('Please fill in all fields');
+    } catch (err: any) {
+      console.error('Login error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
-    localStorage.setItem('authToken', 'dummy-token');
-    navigate('/home');
+    alert('Google login not implemented. Configure OAuth in Xano at /api:9Y3R7lds/auth/google.');
   };
 
   const handleAppleLogin = () => {
-    localStorage.setItem('authToken', 'dummy-token');
-    navigate('/home');
+    alert('Apple login not implemented. Configure OAuth in Xano at /api:9Y3R7lds/auth/apple.');
   };
 
   return (
@@ -62,6 +81,16 @@ const Login = () => {
           Log in to see photos and videos from your friends.
         </p>
 
+        {error && (
+          <motion.p
+            className="text-center text-red-500 mb-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {error}
+          </motion.p>
+        )}
+
         <motion.form
           variants={formContainer}
           initial="hidden"
@@ -70,13 +99,14 @@ const Login = () => {
           className="space-y-4"
         >
           <motion.div variants={fieldVariants}>
-            <label htmlFor="usernameOrEmail" className="block text-sm font-medium text-gray-700">Username or Email</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
             <input
-              id="usernameOrEmail"
-              type="text"
-              value={usernameOrEmail}
-              onChange={(e) => setUsernameOrEmail(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={loading}
             />
           </motion.div>
 
@@ -88,6 +118,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={loading}
             />
           </motion.div>
 
@@ -95,8 +126,9 @@ const Login = () => {
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+              disabled={loading}
             >
-              Log In
+              {loading ? 'Logging in...' : 'Log In'}
             </Button>
           </motion.div>
         </motion.form>
@@ -113,6 +145,7 @@ const Login = () => {
               variant="outline"
               className="w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
               onClick={handleGoogleLogin}
+              disabled={loading}
             >
               <FcGoogle size={20} />
               <span>Log in with Google</span>
@@ -124,6 +157,7 @@ const Login = () => {
               variant="outline"
               className="w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
               onClick={handleAppleLogin}
+              disabled={loading}
             >
               <FaApple size={20} />
               <span>Log in with Apple</span>

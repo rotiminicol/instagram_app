@@ -3,6 +3,7 @@ import { MobileNavbar } from '@/components/MobileNavbar';
 import { Bell, ChevronDown, MessageCircle, PlusCircle, Heart, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import socialAPI from '../api/socialAPI';
 
 interface User {
   username: string;
@@ -33,7 +34,7 @@ interface Story {
   isYourStory?: boolean;
   hasNewStory?: boolean;
   isLive?: boolean;
-  duration?: number; // Added for Story component compatibility
+  duration?: number;
 }
 
 const PostFeed: React.FC<{
@@ -175,6 +176,10 @@ const Home = () => {
   const [showForYouDropdown, setShowForYouDropdown] = useState(false);
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const [activeStory, setActiveStory] = useState<number | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const storiesRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
 
@@ -190,121 +195,66 @@ const Home = () => {
     ['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 1)']
   );
 
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 1,
-      user: { username: 'johndoe', avatar: 'https://picsum.photos/100/100?random=1', verified: true },
-      image: 'https://picsum.photos/600/600?random=2',
-      caption: 'Chasing sunsets by the lake 🌅 #nature #photography',
-      likes: 1247,
-      comments: 89,
-      timestamp: '2h',
-      liked: false,
-      bookmarked: false,
-    },
-    {
-      id: 2,
-      user: { username: 'sarahwilson', avatar: 'https://picsum.photos/100/100?random=3', verified: false },
-      video: 'https://assets.mixkit.co/videos/preview/mixkit-woman-running-above-clouds-time-lapse-32657-large.mp4',
-      caption: 'Morning run vibes 🏃‍♀️ #fitness #sunrise',
-      likes: 892,
-      comments: 156,
-      timestamp: '4h',
-      liked: true,
-      bookmarked: true,
-    },
-    {
-      id: 3,
-      user: { username: 'techexplorer', avatar: 'https://picsum.photos/100/100?random=4', verified: true },
-      image: 'https://picsum.photos/600/600?random=5',
-      caption: 'Late night coding session 💻 #coding #tech',
-      likes: 2156,
-      comments: 243,
-      timestamp: '6h',
-      liked: false,
-      bookmarked: false,
-    },
-    {
-      id: 4,
-      user: { username: 'foodieheaven', avatar: 'https://picsum.photos/100/100?random=6', verified: false },
-      image: 'https://picsum.photos/600/600?random=7',
-      caption: 'Homemade pasta perfection 🍝 #food #cooking',
-      likes: 1784,
-      comments: 198,
-      timestamp: '8h',
-      liked: true,
-      bookmarked: false,
-    },
-    {
-      id: 5,
-      user: { username: 'travelbug', avatar: 'https://picsum.photos/100/100?random=8', verified: true },
-      isCarousel: true,
-      carouselImages: [
-        'https://picsum.photos/600/600?random=9',
-        'https://picsum.photos/600/600?random=10',
-        'https://picsum.photos/600/600?random=11',
-      ],
-      caption: 'Exploring the mountains 🏔️ #travel #adventure',
-      likes: 3201,
-      comments: 287,
-      timestamp: '10h',
-      liked: false,
-      bookmarked: true,
-    },
-    {
-      id: 6,
-      user: { username: 'artvibes', avatar: 'https://picsum.photos/100/100?random=12', verified: false },
-      image: 'https://picsum.photos/600/600?random=13',
-      caption: 'New mural in progress 🎨 #art #creativity',
-      likes: 987,
-      comments: 134,
-      timestamp: '12h',
-      liked: false,
-      bookmarked: false,
-    },
-    {
-      id: 7,
-      user: { username: 'fitlife', avatar: 'https://picsum.photos/100/100?random=14', verified: true },
-      video: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-dancing-against-a-white-wall-40609-large.mp4',
-      caption: 'Dance workout session 💪 #fitness #dance',
-      likes: 2543,
-      comments: 321,
-      timestamp: '14h',
-      liked: true,
-      bookmarked: false,
-    },
-    {
-      id: 8,
-      user: { username: 'petlover', avatar: 'https://picsum.photos/100/100?random=15', verified: false },
-      image: 'https://picsum.photos/600/600?random=16',
-      caption: 'My pup enjoying the park 🐶 #pets #dog',
-      likes: 1456,
-      comments: 178,
-      timestamp: '16h',
-      liked: false,
-      bookmarked: true,
-    },
-  ]);
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      setError('');
 
-  const stories: Story[] = [
-    {
-      id: 0,
-      username: 'your_story',
-      avatar: 'https://picsum.photos/100/100?random=0',
-      image: '',
-      isYourStory: true,
-      duration: 5000,
-    },
-    ...Array(14).fill(0).map((_, index) => ({
-      id: index + 1,
-      username: `user_${index + 1}`,
-      avatar: `https://picsum.photos/100/100?random=${index + 20}`,
-      image: `https://picsum.photos/600/600?random=${index + 34}`,
-      hasNewStory: Math.random() > 0.5,
-      isLive: index % 4 === 0,
-      duration: 5000,
-    })),
-  ];
+      try {
+        console.log('Fetching posts...');
+        const response = await socialAPI.get('/post');
+        console.log('Posts response:', response.data);
+        setPosts(response.data.map((post: any) => ({
+          id: post.id,
+          user: {
+            username: post.user?.username || 'unknown',
+            avatar: post.user?.avatar || `https://picsum.photos/100/100?random=${post.id}`,
+            verified: post.user?.verified || false,
+          },
+          image: post.image_url,
+          video: post.video_url,
+          caption: post.caption || '',
+          likes: post.likes_count || 0,
+          comments: post.comments_count || 0,
+          timestamp: post.created_at || 'Recent',
+          liked: post.is_liked || false,
+          bookmarked: post.is_bookmarked || false,
+          isCarousel: post.is_carousel || false,
+          carouselImages: post.carousel_images || [],
+        })));
+      } catch (err: any) {
+        console.error('Posts error:', err.response?.data || err.message);
+        setError(err.response?.data?.message || 'Failed to fetch posts.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchStories = async () => {
+      try {
+        console.log('Fetching stories...');
+        // Placeholder: Replace with actual stories endpoint when available
+        const response = await socialAPI.get('/stories');
+        console.log('Stories response:', response.data);
+        setStories(response.data.map((story: any, index: number) => ({
+          id: story.id || index,
+          username: story.username || `user_${index + 1}`,
+          avatar: story.avatar || `https://picsum.photos/100/100?random=${index + 20}`,
+          image: story.image || `https://picsum.photos/600/600?random=${index + 34}`,
+          isYourStory: story.is_your_story || false,
+          hasNewStory: story.has_new_story || Math.random() > 0.5,
+          isLive: story.is_live || index % 4 === 0,
+          duration: story.duration || 5000,
+        })));
+      } catch (err: any) {
+        console.error('Stories error:', err.response?.data || err.message);
+        setError(err.response?.data?.message || 'Failed to fetch stories.');
+      }
+    };
+
+    fetchPosts();
+    fetchStories();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = scrollY.on('change', (latest: number) => {
@@ -388,22 +338,42 @@ const Home = () => {
     };
   }, []);
 
-  const handleLike = (postId: number) => {
-    setPosts(posts.map((post) =>
-      post.id === postId
-        ? {
-            ...post,
-            liked: !post.liked,
-            likes: post.liked ? post.likes - 1 : post.likes + 1,
-          }
-        : post
-    ));
+  const handleLike = async (postId: number) => {
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      console.log('Liking post:', postId, { like: !post.liked });
+      await socialAPI.post('/like', { post_id: postId });
+      setPosts(posts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              liked: !p.liked,
+              likes: p.liked ? p.likes - 1 : p.likes + 1,
+            }
+          : p
+      ));
+    } catch (err: any) {
+      console.error('Like error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Failed to update like.');
+    }
   };
 
-  const handleBookmark = (postId: number) => {
-    setPosts(posts.map((post) =>
-      post.id === postId ? { ...post, bookmarked: !post.bookmarked } : post
-    ));
+  const handleBookmark = async (postId: number) => {
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      console.log('Bookmarking post:', postId, { bookmarked: !post.bookmarked });
+      await socialAPI.patch(`/post/${postId}`, { is_bookmarked: !post.bookmarked });
+      setPosts(posts.map((p) =>
+        p.id === postId ? { ...p, bookmarked: !p.bookmarked } : p
+      ));
+    } catch (err: any) {
+      console.error('Bookmark error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Failed to update bookmark.');
+    }
   };
 
   const forYouOptions = ['Following', 'Favorites', 'Explore', 'Friends'];
@@ -419,161 +389,191 @@ const Home = () => {
         }}
       >
         <div className="flex items-center justify-between p-4 max-w-screen-md mx-auto w-full">
-          <div className="relative">
-            <motion.button
-              className="flex items-center space-x-1 font-bold text-lg"
-              onClick={() => setShowForYouDropdown(!showForYouDropdown)}
-              whileTap={{ scale: 0.95 }}
+          <div className="flex items-center">
+            <svg
+              viewBox="0 0 48 48"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-10 h-10 mr-2"
             >
-              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                For You
-              </span>
-              <motion.div
-                animate={{ rotate: showForYouDropdown ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronDown className="w-4 h-4 text-gray-800" />
-              </motion.div>
-            </motion.button>
-
-            <AnimatePresence>
-              {showForYouDropdown && (
-                <motion.div
-                  className="absolute top-full left-0 mt-2 bg-white/95 backdrop-blur-md rounded-xl shadow-lg p-2 w-40 border border-gray-100/50 z-50"
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M24 0C17.4903 0 16.6667 0.0276923 14.1077 0.144C11.5487 0.260308 9.80564 0.666615 8.27939 1.26C6.69128 1.88308 5.35354 2.69539 4.02667 4.02667C2.69538 5.35354 1.88308 6.69128 1.26 8.27939C0.666615 9.80564 0.260308 11.5487 0.144 14.1077C0.0276923 16.6667 0 17.4903 0 24C0 30.5097 0.0276923 31.3333 0.144 33.8923C0.260308 36.4513 0.666615 38.1944 1.26 39.7206C1.88308 41.3087 2.69539 42.6465 4.02667 43.9733C5.35354 45.3046 6.69128 46.1169 8.27939 46.74C9.80564 47.3334 11.5487 47.7397 14.1077 47.856C16.6667 47.9723 17.4903 48 24 48C30.5097 48 31.3333 47.9723 33.8923 47.856C36.4513 47.7397 38.1944 47.3334 39.7206 46.74C41.3087 46.1169 42.6465 45.3046 43.9733 43.9733C45.3046 42.6465 46.1169 41.3087 46.74 39.7206C47.3334 38.1944 47.7397 36.4513 47.856 33.8923C47.9723 31.3333 48 30.5097 48 24C48 17.4903 47.9723 16.6667 47.856 14.1077C47.7397 11.5487 47.3334 9.80564 46.74 8.27939C46.1169 6.69128 45.3046 5.35354 43.9733 4.02667C42.6465 2.69538 41.3087 1.88308 39.7206 1.26C38.1944 0.666615 36.4513 0.260308 33.8923 0.144C31.3333 0.0276923 30.5097 0 24 0Z"
+                fill="url(#paint0_radial)"
+              />
+              <defs>
+                <radialGradient
+                  id="paint0_radial"
+                  cx="0"
+                  cy="0"
+                  r="1"
+                  gradientUnits="userSpaceOnUse"
+                  gradientTransform="translate(12 48) rotate(-90) scale(48 48.0016)"
                 >
-                  {forYouOptions.map((option) => (
-                    <motion.button
-                      key={option}
-                      className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors duration-200 text-gray-800 text-sm"
-                      onClick={() => setShowForYouDropdown(false)}
-                      whileHover={{ scale: 1.02, x: 5 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ type: 'spring', stiffness: 400 }}
-                    >
-                      {option}
-                    </motion.button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <stop stopColor="#FFDD55" />
+                  <stop offset="0.1" stopColor="#FFDD55" />
+                  <stop offset="0.5" stopColor="#FF543E" />
+                  <stop offset="1" stopColor="#C837AB" />
+                </radialGradient>
+              </defs>
+            </svg>
+            <div className="relative">
+              <motion.button
+                className="flex items-center text-lg font-semibold text-gray-900"
+                onClick={() => setShowForYouDropdown(!showForYouDropdown)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                For You
+                <ChevronDown className="w-5 h-5 ml-1" />
+              </motion.button>
+              <AnimatePresence>
+                {showForYouDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-10 left-0 bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-40"
+                  >
+                    {forYouOptions.map((option) => (
+                      <button
+                        key={option}
+                        className="w-full text-left px-4 py-2 text-gray-900 hover:bg-gray-100"
+                        onClick={() => {
+                          setShowForYouDropdown(false);
+                          // TODO: Implement feed filtering logic
+                        }}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
-          <div className="flex space-x-5">
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-              <Link to="/notifications">
-                <Bell className="w-6 h-6 text-gray-800" />
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-              <Link to="/messages">
-                <MessageCircle className="w-6 h-6 text-gray-800" />
-              </Link>
-            </motion.div>
+          <div className="flex items-center space-x-4">
+            <Link to="/create-post" className="text-gray-600 hover:text-gray-900">
+              <PlusCircle className="w-6 h-6" />
+            </Link>
+            <Link to="/notifications" className="text-gray-600 hover:text-gray-900 relative">
+              <Bell className="w-6 h-6" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+            </Link>
+            <Link to="/messages" className="text-gray-600 hover:text-gray-900">
+              <MessageCircle className="w-6 h-6" />
+            </Link>
           </div>
         </div>
       </motion.header>
 
-      <div className="pt-16 max-w-screen-md mx-auto">
-        <div className="relative bg-white py-4 shadow-sm">
-          <div
-            className="overflow-x-auto no-scrollbar px-4 py-2 scroll-snap-x"
-            ref={storiesRef}
+      <main className="pt-16 max-w-screen-md mx-auto w-full">
+        {error && (
+          <motion.p
+            className="text-center text-red-500 mx-4 mb-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
           >
-            <div className="flex space-x-4">
+            {error}
+          </motion.p>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+          </div>
+        ) : (
+          <>
+            <div
+              ref={storiesRef}
+              className="flex space-x-4 p-4 overflow-x-auto scrollbar-hide"
+            >
               {stories.map((story) => (
                 <motion.div
                   key={story.id}
-                  className="flex flex-col items-center space-y-1 relative flex-shrink-0"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: story.id * 0.05, type: 'spring' }}
-                  whileHover={{ scale: 1.05 }}
+                  className="flex flex-col items-center w-20 flex-shrink-0"
+                  onClick={() => setActiveStory(story.id)}
+                  whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onHoverStart={() => setActiveStory(story.id)}
-                  onHoverEnd={() => setActiveStory(null)}
                 >
-                  <Link
-                    to={story.isYourStory ? '/create-story' : `/stories/${story.id}`}
-                    className="flex flex-col items-center group"
-                  >
-                    <div className="relative">
-                      <div
-                        className={`absolute inset-0 rounded-full p-[2px] ${
-                          story.isYourStory
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-500'
-                            : story.hasNewStory
-                            ? 'bg-gradient-to-r from-purple-600 to-pink-600'
-                            : 'bg-gradient-to-r from-gray-300 to-gray-400'
-                        }`}
-                      ></div>
-                      <div className="relative rounded-full p-0.5 bg-white">
-                        <img
-                          src={story.avatar}
-                          alt={story.username}
-                          className="w-16 h-16 rounded-full object-cover border-2 border-white lazy-load"
-                          data-src={story.avatar}
-                          onError={(e) => (e.currentTarget.src = 'https://picsum.photos/100/100?random=0')}
-                          loading="lazy"
-                        />
-                        {story.isYourStory && (
-                          <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1">
-                            <PlusCircle className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                        {story.isLive && (
-                          <div className="absolute bottom-0 left-0 bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full border-2 border-white">
-                            Live
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-600 truncate max-w-[70px] group-hover:text-gray-900 transition-colors">
-                      {story.username}
-                    </span>
-                  </Link>
-                  {activeStory === story.id && !story.isYourStory && (
-                    <motion.div
-                      className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 to-pink-600"
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ duration: 5, ease: 'linear' }}
+                  <div className="relative">
+                    <div
+                      className={`absolute -inset-1 rounded-full ${
+                        story.hasNewStory
+                          ? 'bg-gradient-to-tr from-purple-400 to-pink-400'
+                          : 'bg-gray-200'
+                      }`}
                     />
-                  )}
+                    <img
+                      src={story.avatar}
+                      alt={story.username}
+                      className="relative w-16 h-16 rounded-full object-cover border-2 border-white"
+                      onError={(e) => (e.currentTarget.src = 'https://picsum.photos/100/100?random=0')}
+                    />
+                    {story.isLive && (
+                      <div className="absolute bottom-0 right-0 bg-red-500 text-white text-xs px-1 rounded">
+                        LIVE
+                      </div>
+                    )}
+                    {story.isYourStory && (
+                      <div className="absolute bottom-0 right-0 bg-white rounded-full p-1 border border-gray-200">
+                        <PlusCircle className="w-4 h-4 text-purple-500" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs mt-1 text-gray-900 truncate w-full text-center">
+                    {story.isYourStory ? 'Your Story' : story.username}
+                  </span>
                 </motion.div>
               ))}
             </div>
-          </div>
 
-          <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none"></div>
-          <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
-        </div>
+            <AnimatePresence>
+              {activeStory !== null && (
+                <motion.div
+                  className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <motion.img
+                    src={stories.find((s) => s.id === activeStory)?.image}
+                    alt="Story"
+                    className="max-h-full max-w-full object-contain"
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    onError={(e) => (e.currentTarget.src = 'https://picsum.photos/600/600?random=0')}
+                  />
+                  <button
+                    className="absolute top-4 right-4 text-white"
+                    onClick={() => setActiveStory(null)}
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white rounded-t-xl overflow-hidden shadow-sm"
-        >
-          <PostFeed posts={posts} onLike={handleLike} onBookmark={handleBookmark} />
-        </motion.div>
-      </div>
+            <PostFeed posts={posts} onLike={handleLike} onBookmark={handleBookmark} />
+          </>
+        )}
+      </main>
 
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="fixed bottom-0 left-0 right-0 z-40"
-      >
-        <MobileNavbar />
-      </motion.div>
-
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 to-pink-600 z-50"
-        style={{ scaleX: useTransform(scrollY, [0, 500], [0, 1]) }}
-      />
+      <MobileNavbar />
     </div>
   );
 };
