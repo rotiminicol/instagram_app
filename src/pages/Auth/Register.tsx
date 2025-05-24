@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { FcGoogle } from 'react-icons/fc';
 import { FaApple } from 'react-icons/fa';
-import axios from 'axios';
+import authAPI from '../../api/authAPI';
 
 const cardVariants = {
   hidden: { opacity: 0, scale: 0.9 },
@@ -41,7 +41,7 @@ const Register = () => {
 
     try {
       console.log('Attempting signup with:', { email, name, password });
-      const response = await axios.post('https://x8ki-letl-twmt.n7.xano.io/api:9Y3R7lds/auth/signup', {
+      const response = await authAPI.post('/auth/signup', {
         email,
         name,
         password,

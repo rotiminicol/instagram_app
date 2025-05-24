@@ -1,3 +1,4 @@
+
 import { useState, memo } from "react";
 import { ArrowLeft, ChevronRight, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -51,6 +52,7 @@ const Settings = () => {
     setError('');
 
     try {
+      console.log('Logging out user...');
       localStorage.removeItem('token');
       setLogoutModalOpen(false);
       navigate('/welcome');

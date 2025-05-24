@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Check, ArrowRight, Camera } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import authAPI from '../api/authAPI';
 import socialAPI from '../api/socialAPI';
 
 const stepVariants = {
@@ -17,12 +18,7 @@ const Onboarding = () => {
   const [step, setStep] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
-  const [suggestedUsers, setSuggestedUsers] = useState<{ id: number; username: string; avatar: string; followed: boolean }[]>([
-    // Placeholder users until /users/suggested endpoint is added
-    { id: 1, username: 'user1', avatar: 'https://picsum.photos/100/100?random=1', followed: false },
-    { id: 2, username: 'user2', avatar: 'https://picsum.photos/100/100?random=2', followed: false },
-    { id: 3, username: 'user3', avatar: 'https://picsum.photos/100/100?random=3', followed: false },
-  ]);
+  const [suggestedUsers, setSuggestedUsers] = useState<{ id: number; username: string; avatar: string; followed: boolean }[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -52,7 +48,7 @@ const Onboarding = () => {
 
       try {
         console.log('Uploading profile photo to /auth/me...');
-        await socialAPI.patch('/auth/me', formData, {
+        await authAPI.patch('/auth/me', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         console.log('Profile photo uploaded');
@@ -71,7 +67,7 @@ const Onboarding = () => {
 
     try {
       console.log('Saving interests to /auth/me:', selectedInterests);
-      await socialAPI.patch('/auth/me', { interests: selectedInterests });
+      await authAPI.patch('/auth/me', { interests: selectedInterests });
       console.log('Interests saved');
     } catch (err: any) {
       console.error('Interests save error:', err.response?.data || err.message);

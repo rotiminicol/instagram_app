@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { FcGoogle } from 'react-icons/fc';
 import { FaApple } from 'react-icons/fa';
-import axios from 'axios';
+import authAPI from '../../api/authAPI';
 
 // Animation variants for the card
 const cardVariants = {
@@ -42,7 +42,7 @@ const Login = () => {
 
     try {
       console.log('Attempting login with:', { email, password });
-      const response = await axios.post('https://x8ki-letl-twmt.n7.xano.io/api:9Y3R7lds/auth/login', {
+      const response = await authAPI.post('/auth/login', {
         email,
         password,
       });

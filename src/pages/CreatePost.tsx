@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { MobileNavbar } from '@/components/MobileNavbar';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useDebounce } from 'use-debounce';
+import socialAPI from '../api/socialAPI';
 
 const CreatePost = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const CreatePost = () => {
   const [caption, setCaption] = useState('');
   const [selectedImage, setSelectedImage] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [error, setError] = useState('');
   const [debouncedCaption] = useDebounce(caption, 300);
   
   // Animation values for the header
@@ -27,10 +29,32 @@ const CreatePost = () => {
   ];
   
   const handlePost = async () => {
+    if (!selectedImage || !debouncedCaption.trim()) {
+      setError('Please select an image and add a caption');
+      return;
+    }
+
     setIsPosting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    navigate('/');
+    setError('');
+
+    try {
+      console.log('Creating post with:', { caption: debouncedCaption, image: selectedImage });
+      
+      const postData = {
+        caption: debouncedCaption,
+        image_url: selectedImage,
+        is_reel: activeTab === 'reel'
+      };
+
+      const response = await socialAPI.post('/post', postData);
+      console.log('Post created:', response.data);
+      navigate('/home');
+    } catch (err: any) {
+      console.error('Post creation error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Failed to create post. Please try again.');
+    } finally {
+      setIsPosting(false);
+    }
   };
   
   const handleTabChange = (tab: 'post' | 'reel') => {
@@ -146,6 +170,16 @@ const CreatePost = () => {
       </motion.header>
       
       <div className="pt-28 px-4">
+        {error && (
+          <motion.p
+            className="text-center text-red-500 mb-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {error}
+          </motion.p>
+        )}
+
         <AnimatePresence mode="wait">
           {!selectedImage ? (
             <motion.div
