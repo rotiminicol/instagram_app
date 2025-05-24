@@ -1,5 +1,5 @@
 
-import { Home, Search, PlusSquare, Heart, User } from 'lucide-react';
+import { Home, Search, PlusSquare, Play, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -10,7 +10,7 @@ export const MobileNavbar = () => {
     { icon: Home, path: '/home', label: 'Home' },
     { icon: Search, path: '/search', label: 'Search' },
     { icon: PlusSquare, path: '/create', label: 'Create' },
-    { icon: Heart, path: '/notifications', label: 'Activity' },
+    { icon: Play, path: '/reels', label: 'Reels' },
     { icon: User, path: '/profile', label: 'Profile' },
   ];
 

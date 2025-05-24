@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { MobileNavbar } from '@/components/MobileNavbar';
 import { PostCreator } from '@/components/PostCreator';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Camera, Plus } from 'lucide-react';
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { postService, likeService, storyService } from '../api/services';
+import { postService, likeService, storyService, followService } from '../api/services';
 
 interface User {
   id: number;
@@ -38,10 +38,16 @@ const Home = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const storiesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Get current user from localStorage
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
+    
     fetchPosts();
     fetchStories();
   }, []);
@@ -53,26 +59,7 @@ const Home = () => {
       setPosts(response.data || []);
     } catch (err: any) {
       console.error('Posts error:', err);
-      // Use placeholder data for demo
-      setPosts([
-        {
-          id: 1,
-          caption: 'Beautiful sunset! 🌅',
-          image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
-          created_at: '2h',
-          user_id: 1,
-          user: {
-            id: 1,
-            username: 'joshua_l',
-            name: 'Joshua',
-            profile_image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
-          },
-          likes_count: 101,
-          comments_count: 0,
-          is_liked: false,
-          is_bookmarked: false
-        }
-      ]);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -83,29 +70,21 @@ const Home = () => {
       const response = await storyService.getStories();
       setStories(response.data || []);
     } catch (err: any) {
-      // Use placeholder data
-      setStories([
-        {
-          id: 1,
-          user: { id: 1, username: 'Your story', name: 'Your story', profile_image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face' },
-          media: '',
-          created_at: 'now',
-          viewed: false
-        },
-        {
-          id: 2,
-          user: { id: 2, username: 'karennne', name: 'Karennne', profile_image: 'https://images.unsplash.com/photo-1494790108755-2616b612b830?w=100&h=100&fit=crop&crop=face' },
-          media: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&h=600&fit=crop',
-          created_at: '2h',
-          viewed: false
-        }
-      ]);
+      console.error('Stories error:', err);
+      setStories([]);
     }
   };
 
   const handleLike = async (postId: number) => {
     try {
-      await likeService.likePost(postId);
+      const post = posts.find(p => p.id === postId);
+      if (post?.is_liked) {
+        // Find the like and unlike it (you'll need to implement this properly)
+        console.log('Unlike post:', postId);
+      } else {
+        await likeService.likePost(postId);
+      }
+      
       setPosts(posts.map(post => 
         post.id === postId 
           ? { 
@@ -181,11 +160,17 @@ const Home = () => {
             >
               <div className="relative">
                 <div className="w-16 h-16 rounded-full border-2 border-gray-300 flex items-center justify-center bg-white">
-                  <img
-                    src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
-                    alt="Your story"
-                    className="w-14 h-14 rounded-full object-cover"
-                  />
+                  {currentUser?.profile_image ? (
+                    <img
+                      src={currentUser.profile_image}
+                      alt="Your story"
+                      className="w-14 h-14 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-lg font-bold">
+                      {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
                     <Plus className="w-3 h-3 text-white" />
                   </div>
@@ -197,7 +182,7 @@ const Home = () => {
             </motion.div>
 
             {/* Other Stories */}
-            {stories.slice(1).map((story) => (
+            {stories.map((story) => (
               <motion.div
                 key={story.id}
                 className="flex flex-col items-center space-y-1 flex-shrink-0"
@@ -224,97 +209,113 @@ const Home = () => {
 
         {/* Posts */}
         <div className="divide-y divide-gray-200">
-          {posts.map((post) => (
-            <motion.article
-              key={post.id}
-              className="bg-white"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Post Header */}
-              <div className="flex items-center justify-between p-3">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={post.user?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face'}
-                    alt={post.user?.username}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-semibold text-sm text-gray-900">
-                      {post.user?.username}
-                    </p>
-                  </div>
-                </div>
-                <MoreHorizontal className="w-5 h-5 text-gray-600" />
+          {posts.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 border-2 border-gray-300 rounded-full flex items-center justify-center">
+                <Heart className="w-8 h-8 text-gray-300" />
               </div>
-
-              {/* Post Image */}
-              {post.image && (
-                <div className="relative aspect-square">
-                  <img
-                    src={post.image}
-                    alt="Post content"
-                    className="w-full h-full object-cover"
-                    onDoubleClick={() => handleLike(post.id)}
-                  />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Posts Yet</h3>
+              <p className="text-gray-500">Start following people to see their posts here.</p>
+            </div>
+          ) : (
+            posts.map((post) => (
+              <motion.article
+                key={post.id}
+                className="bg-white"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Post Header */}
+                <div className="flex items-center justify-between p-3">
+                  <div className="flex items-center space-x-3">
+                    {post.user?.profile_image ? (
+                      <img
+                        src={post.user.profile_image}
+                        alt={post.user.username}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+                        {post.user?.username?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">
+                        {post.user?.username}
+                      </p>
+                    </div>
+                  </div>
+                  <MoreHorizontal className="w-5 h-5 text-gray-600" />
                 </div>
-              )}
 
-              {/* Post Actions */}
-              <div className="p-3">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-4">
+                {/* Post Image */}
+                {post.image && (
+                  <div className="relative aspect-square">
+                    <img
+                      src={post.image}
+                      alt="Post content"
+                      className="w-full h-full object-cover"
+                      onDoubleClick={() => handleLike(post.id)}
+                    />
+                  </div>
+                )}
+
+                {/* Post Actions */}
+                <div className="p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-4">
+                      <motion.button
+                        onClick={() => handleLike(post.id)}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <Heart 
+                          className={`w-6 h-6 ${post.is_liked ? 'text-red-500' : 'text-black'}`}
+                          fill={post.is_liked ? 'currentColor' : 'none'}
+                        />
+                      </motion.button>
+                      <MessageCircle className="w-6 h-6 text-black" />
+                      <Send className="w-6 h-6 text-black" />
+                    </div>
                     <motion.button
-                      onClick={() => handleLike(post.id)}
+                      onClick={() => handleBookmark(post.id)}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <Heart 
-                        className={`w-6 h-6 ${post.is_liked ? 'text-red-500' : 'text-black'}`}
-                        fill={post.is_liked ? 'currentColor' : 'none'}
+                      <Bookmark 
+                        className={`w-6 h-6 text-black`}
+                        fill={post.is_bookmarked ? 'currentColor' : 'none'}
                       />
                     </motion.button>
-                    <MessageCircle className="w-6 h-6 text-black" />
-                    <Send className="w-6 h-6 text-black" />
                   </div>
-                  <motion.button
-                    onClick={() => handleBookmark(post.id)}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <Bookmark 
-                      className={`w-6 h-6 text-black`}
-                      fill={post.is_bookmarked ? 'currentColor' : 'none'}
-                    />
-                  </motion.button>
-                </div>
 
-                {/* Likes */}
-                {(post.likes_count || 0) > 0 && (
-                  <p className="font-semibold text-sm text-gray-900 mb-2">
-                    {post.likes_count?.toLocaleString()} likes
+                  {/* Likes */}
+                  {(post.likes_count || 0) > 0 && (
+                    <p className="font-semibold text-sm text-gray-900 mb-2">
+                      {post.likes_count?.toLocaleString()} likes
+                    </p>
+                  )}
+
+                  {/* Caption */}
+                  <div className="text-sm text-gray-900">
+                    <span className="font-semibold">{post.user?.username}</span>
+                    <span className="ml-2">{post.caption}</span>
+                  </div>
+
+                  {/* Comments */}
+                  {(post.comments_count || 0) > 0 && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      View all {post.comments_count} comments
+                    </p>
+                  )}
+
+                  {/* Timestamp */}
+                  <p className="text-xs text-gray-500 mt-2 uppercase">
+                    {new Date(post.created_at).toLocaleDateString()}
                   </p>
-                )}
-
-                {/* Caption */}
-                <div className="text-sm text-gray-900">
-                  <span className="font-semibold">{post.user?.username}</span>
-                  <span className="ml-2">{post.caption}</span>
                 </div>
-
-                {/* Comments */}
-                {(post.comments_count || 0) > 0 && (
-                  <p className="text-sm text-gray-500 mt-2">
-                    View all {post.comments_count} comments
-                  </p>
-                )}
-
-                {/* Timestamp */}
-                <p className="text-xs text-gray-500 mt-2 uppercase">
-                  {post.created_at}
-                </p>
-              </div>
-            </motion.article>
-          ))}
+              </motion.article>
+            ))
+          )}
         </div>
       </main>
 

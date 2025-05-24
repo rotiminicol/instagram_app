@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Edit, Phone, Video, Info } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MobileNavbar } from '@/components/MobileNavbar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { messageService, conversationService } from '../api/services';
@@ -23,6 +23,7 @@ interface Conversation {
 }
 
 const Messages = () => {
+  const navigate = useNavigate();
   const [activeChat, setActiveChat] = useState<number | null>(null);
   const [messageText, setMessageText] = useState('');
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -39,21 +40,7 @@ const Messages = () => {
         setConversations(response.data || []);
       } catch (error) {
         console.error('Error fetching conversations:', error);
-        // Fallback to mock data
-        setConversations([
-          {
-            id: 1,
-            name: 'John Doe',
-            created_at: new Date().toISOString(),
-            lastMessage: 'Hey, how are you?'
-          },
-          {
-            id: 2,
-            name: 'Sarah Wilson',
-            created_at: new Date().toISOString(),
-            lastMessage: 'Thanks for the photos!'
-          }
-        ]);
+        setConversations([]);
       } finally {
         setLoading(false);
       }
@@ -68,7 +55,6 @@ const Messages = () => {
       const response = await messageService.getMessages();
       console.log('Messages response:', response.data);
       
-      // Filter messages for this conversation
       const conversationMessages = response.data?.filter(
         (msg: Message) => msg.conversation === conversationId
       ) || [];
@@ -79,25 +65,9 @@ const Messages = () => {
       }));
     } catch (error) {
       console.error('Error fetching messages:', error);
-      // Fallback to mock data
       setMessages(prev => ({
         ...prev,
-        [conversationId]: [
-          {
-            id: 1,
-            content: 'Hello there!',
-            created_at: new Date().toISOString(),
-            sender: 2,
-            conversation: conversationId
-          },
-          {
-            id: 2,
-            content: 'Hi! How are you doing?',
-            created_at: new Date().toISOString(),
-            sender: 1,
-            conversation: conversationId
-          }
-        ]
+        [conversationId]: []
       }));
     }
   };
@@ -114,7 +84,7 @@ const Messages = () => {
         id: response.data.id || Date.now(),
         content: messageText,
         created_at: new Date().toISOString(),
-        sender: 1, // Current user ID
+        sender: 1,
         conversation: conversationId,
       };
 
@@ -156,9 +126,9 @@ const Messages = () => {
           <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center space-x-2">
-                <Link to="/" className="mr-2">
+                <button onClick={() => navigate('/home')} className="mr-2">
                   <ArrowLeft className="w-6 h-6" />
-                </Link>
+                </button>
                 <h1 className="text-xl font-semibold">Messages</h1>
               </div>
               <button>
@@ -168,30 +138,40 @@ const Messages = () => {
           </header>
 
           <div className="py-2">
-            {conversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
-                onClick={() => handleChatSelect(conversation.id)}
-              >
-                <div className="relative mr-3">
-                  <img
-                    src={`https://picsum.photos/50/50?random=${conversation.id}`}
-                    alt={conversation.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
+            {conversations.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 border-2 border-gray-300 rounded-full flex items-center justify-center">
+                  <Edit className="w-8 h-8 text-gray-300" />
                 </div>
-                <div className="flex-1 text-left">
-                  <h3 className="font-medium text-gray-900">{conversation.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {conversation.lastMessage || 'No messages yet'}
-                  </p>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {new Date(conversation.created_at).toLocaleDateString()}
-                </div>
-              </button>
-            ))}
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Messages Yet</h3>
+                <p className="text-gray-500">Start a conversation with someone you follow.</p>
+              </div>
+            ) : (
+              conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
+                  onClick={() => handleChatSelect(conversation.id)}
+                >
+                  <div className="relative mr-3">
+                    <img
+                      src={`https://picsum.photos/50/50?random=${conversation.id}`}
+                      alt={conversation.name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h3 className="font-medium text-gray-900">{conversation.name}</h3>
+                    <p className="text-sm text-gray-500">
+                      {conversation.lastMessage || 'No messages yet'}
+                    </p>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(conversation.created_at).toLocaleDateString()}
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </>
       ) : (
