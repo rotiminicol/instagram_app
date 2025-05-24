@@ -1,18 +1,17 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { FcGoogle } from 'react-icons/fc';
 import { FaApple } from 'react-icons/fa';
-import authAPI from '../../api/authAPI';
+import { authService } from '../../api/services';
 
-// Animation variants for the card
 const cardVariants = {
   hidden: { opacity: 0, scale: 0.9 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-// Animation variants for form fields
 const formContainer = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -42,13 +41,13 @@ const Login = () => {
 
     try {
       console.log('Attempting login with:', { email, password });
-      const response = await authAPI.post('/auth/login', {
-        email,
-        password,
-      });
+      const response = await authService.login(email, password);
       console.log('Login response:', response.data);
-      const { authToken } = response.data; // Xano typically returns authToken
-      localStorage.setItem('token', authToken);
+      
+      const { authToken } = response.data;
+      localStorage.setItem('authToken', authToken);
+      localStorage.setItem('token', authToken); // For API calls
+      
       navigate('/home');
     } catch (err: any) {
       console.error('Login error:', err.response?.data || err.message);
@@ -59,36 +58,33 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    alert('Google login not implemented. Configure OAuth in Xano at /api:9Y3R7lds/auth/google.');
+    alert('Google login not implemented. Configure OAuth in Xano.');
   };
 
   const handleAppleLogin = () => {
-    alert('Apple login not implemented. Configure OAuth in Xano at /api:9Y3R7lds/auth/apple.');
+    alert('Apple login not implemented. Configure OAuth in Xano.');
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-10">
       <motion.div
-        className="w-full max-w-sm rounded-lg bg-white p-8 shadow-lg"
+        className="w-full max-w-sm rounded-lg bg-white p-8 border border-gray-200"
         variants={cardVariants}
         initial="hidden"
         animate="visible"
       >
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent text-center mb-6">
-          Instagram
-        </h1>
-        <p className="text-center text-gray-600 mb-6">
-          Log in to see photos and videos from your friends.
-        </p>
+        <div className="flex justify-center mb-8">
+          <h1 className="text-3xl font-bold">Instagram</h1>
+        </div>
 
         {error && (
-          <motion.p
-            className="text-center text-red-500 mb-4"
+          <motion.div
+            className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
             {error}
-          </motion.p>
+          </motion.div>
         )}
 
         <motion.form
@@ -99,25 +95,25 @@ const Login = () => {
           className="space-y-4"
         >
           <motion.div variants={fieldVariants}>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Phone number, username, or email"
+              className="w-full px-3 py-3 bg-gray-50 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-gray-400"
               disabled={loading}
             />
           </motion.div>
 
           <motion.div variants={fieldVariants}>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Password"
+              className="w-full px-3 py-3 bg-gray-50 border border-gray-300 rounded-sm text-sm focus:outline-none focus:border-gray-400"
               disabled={loading}
             />
           </motion.div>
@@ -125,25 +121,25 @@ const Login = () => {
           <motion.div variants={fieldVariants}>
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+              className="w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? 'Logging in...' : 'Log In'}
+              {loading ? 'Logging in...' : 'Log in'}
             </Button>
           </motion.div>
         </motion.form>
 
         <div className="my-6 flex items-center">
           <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-gray-500">OR</span>
+          <span className="mx-4 text-gray-500 text-sm font-semibold">OR</span>
           <div className="flex-grow border-t border-gray-300"></div>
         </div>
 
-        <div className="space-y-2">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <div className="space-y-3">
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button
-              variant="outline"
-              className="w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
+              variant="ghost"
+              className="w-full flex items-center justify-center space-x-2 py-2 text-blue-900 font-semibold"
               onClick={handleGoogleLogin}
               disabled={loading}
             >
@@ -152,10 +148,10 @@ const Login = () => {
             </Button>
           </motion.div>
 
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button
-              variant="outline"
-              className="w-full flex items-center justify-center space-x-2 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
+              variant="ghost"
+              className="w-full flex items-center justify-center space-x-2 py-2 text-blue-900 font-semibold"
               onClick={handleAppleLogin}
               disabled={loading}
             >
@@ -165,19 +161,23 @@ const Login = () => {
           </motion.div>
         </div>
 
-        <p className="mt-4 text-center text-gray-600">
-          <Link to="/forgot-password" className="text-blue-500 hover:underline">
+        <p className="mt-6 text-center text-blue-900 text-sm">
+          <Link to="/forgot-password" className="hover:underline">
             Forgot password?
           </Link>
         </p>
-
-        <p className="mt-4 text-center text-gray-600">
-          Don’t have an account?{" "}
-          <Link to="/register" className="text-blue-500 hover:underline">
-            Sign up
-          </Link>
-        </p>
       </motion.div>
+
+      <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link to="/register" className="text-blue-500 font-semibold hover:underline">
+              Sign up
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
