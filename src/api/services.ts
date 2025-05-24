@@ -136,3 +136,28 @@ export const repostService = {
   
   getRepost: (repostId: number) => socialAPI.get(`/repost/${repostId}`),
 };
+
+// Conversation Services
+export const conversationService = {
+  getConversations: () => socialAPI.get('/conversation'),
+  
+  createConversation: (data: { name: string }) => 
+    socialAPI.post('/conversation', data),
+  
+  getConversation: (conversationId: number) => socialAPI.get(`/conversation/${conversationId}`),
+  
+  updateConversation: (conversationId: number, data: any) => 
+    socialAPI.patch(`/conversation/${conversationId}`, data),
+  
+  deleteConversation: (conversationId: number) => socialAPI.delete(`/conversation/${conversationId}`),
+};
+
+// Conversation Participant Services
+export const conversationParticipantService = {
+  getParticipants: () => socialAPI.get('/conversation_participant'),
+  
+  addParticipant: (data: { conversation: number; user: number }) => 
+    socialAPI.post('/conversation_participant', data),
+  
+  removeParticipant: (participantId: number) => socialAPI.delete(`/conversation_participant/${participantId}`),
+};

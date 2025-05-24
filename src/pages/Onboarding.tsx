@@ -1,11 +1,10 @@
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Check, ArrowRight, Camera } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import authAPI from '../api/authAPI';
-import socialAPI from '../api/socialAPI';
+import { Check, ArrowRight, Camera, X } from "lucide-react";
+import { authService } from '../api/services';
 
 const stepVariants = {
   hidden: { opacity: 0, x: 100 },
@@ -18,7 +17,6 @@ const Onboarding = () => {
   const [step, setStep] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
-  const [suggestedUsers, setSuggestedUsers] = useState<{ id: number; username: string; avatar: string; followed: boolean }[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,6 +24,13 @@ const Onboarding = () => {
     "Photography", "Travel", "Food", "Fashion",
     "Fitness", "Music", "Art", "Gaming",
     "Technology", "Nature", "Sports", "Beauty"
+  ];
+
+  const suggestedUsers = [
+    { id: 1, username: 'john_doe', avatar: 'https://picsum.photos/50/50?random=1', followed: false },
+    { id: 2, username: 'jane_smith', avatar: 'https://picsum.photos/50/50?random=2', followed: false },
+    { id: 3, username: 'mike_wilson', avatar: 'https://picsum.photos/50/50?random=3', followed: false },
+    { id: 4, username: 'sarah_jones', avatar: 'https://picsum.photos/50/50?random=4', followed: false },
   ];
 
   const toggleInterest = (interest: string) => {
@@ -44,13 +49,11 @@ const Onboarding = () => {
       setError('');
 
       const formData = new FormData();
-      formData.append('profile_photo', file);
+      formData.append('profile_image', file);
 
       try {
         console.log('Uploading profile photo to /auth/me...');
-        await authAPI.patch('/auth/me', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await authService.updateProfile(formData);
         console.log('Profile photo uploaded');
       } catch (err: any) {
         console.error('Photo upload error:', err.response?.data || err.message);
@@ -67,30 +70,11 @@ const Onboarding = () => {
 
     try {
       console.log('Saving interests to /auth/me:', selectedInterests);
-      await authAPI.patch('/auth/me', { interests: selectedInterests });
+      await authService.updateProfile({ interests: selectedInterests });
       console.log('Interests saved');
     } catch (err: any) {
       console.error('Interests save error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'Failed to save interests.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFollow = async (userId: number) => {
-    setLoading(true);
-    setError('');
-
-    try {
-      console.log('Following user:', userId);
-      await socialAPI.post('/follow', { followee_id: userId });
-      setSuggestedUsers(suggestedUsers.map(user =>
-        user.id === userId ? { ...user, followed: true } : user
-      ));
-      console.log('User followed');
-    } catch (err: any) {
-      console.error('Follow error:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'Failed to follow user.');
     } finally {
       setLoading(false);
     }
@@ -109,20 +93,27 @@ const Onboarding = () => {
 
   return (
     <div className="h-screen flex flex-col bg-white">
-      <div className="p-4 flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <button
+          className="text-gray-500 hover:text-gray-800"
+          onClick={() => step > 1 ? setStep(step - 1) : navigate('/welcome')}
+          disabled={loading}
+        >
+          <ArrowRight className="w-6 h-6 rotate-180" />
+        </button>
+        
         <div className="flex space-x-2">
           {[1, 2, 3].map((i) => (
-            <motion.div
+            <div
               key={i}
-              className={`h-1 rounded-full ${i <= step ? 'bg-gradient-to-r from-purple-600 to-pink-600' : 'bg-gray-200'} ${i < 3 ? 'w-12' : 'w-12'}`}
-              initial={{ width: 0 }}
-              animate={{ width: i <= step ? '3rem' : '0.75rem' }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            ></motion.div>
+              className={`h-1 w-16 rounded-full ${i <= step ? 'bg-[#0095F6]' : 'bg-gray-200'}`}
+            />
           ))}
         </div>
+
         <button
-          className="text-gray-500 hover:text-gray-800 transition-colors"
+          className="text-[#0095F6] font-semibold hover:text-[#0095F6]/80"
           onClick={() => navigate('/home')}
           disabled={loading}
         >
@@ -131,15 +122,16 @@ const Onboarding = () => {
       </div>
 
       {error && (
-        <motion.p
-          className="text-center text-red-500 mx-6 mb-4"
+        <motion.div
+          className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          {error}
-        </motion.p>
+          <p className="text-red-600 text-sm">{error}</p>
+        </motion.div>
       )}
 
+      {/* Content */}
       <div className="flex-1 flex flex-col px-6 py-8">
         <AnimatePresence mode="wait">
           {step === 1 && (
@@ -149,31 +141,51 @@ const Onboarding = () => {
               initial="hidden"
               animate="visible"
               exit="exit"
+              className="flex-1 flex flex-col items-center justify-center"
             >
-              <h1 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Set up your profile</h1>
-              <p className="text-gray-500 mb-8">Add a profile photo so your friends know it's you</p>
-              
-              <div className="flex justify-center mb-10">
-                <motion.div
-                  className="w-36 h-36 rounded-full bg-gradient-to-tr from-purple-100 to-pink-100 flex items-center justify-center relative group"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    disabled={loading}
-                  />
-                  <button className="absolute inset-0 flex items-center justify-center bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera className="w-8 h-8" />
-                  </button>
-                  <div className="w-32 h-32 rounded-full bg-gray-50 flex items-center justify-center border-2 border-dashed border-gray-300">
-                    <span className="text-purple-600 font-medium">{profilePhoto ? 'Photo Selected' : 'Add Photo'}</span>
-                  </div>
-                </motion.div>
+              <div className="text-center mb-12">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                  Add a profile photo
+                </h1>
+                <p className="text-gray-600 text-base">
+                  Add a profile photo so your friends know it's you.
+                </p>
               </div>
+              
+              <div className="relative mb-8">
+                <div className="w-32 h-32 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                  {profilePhoto ? (
+                    <img
+                      src={URL.createObjectURL(profilePhoto)}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Camera className="w-8 h-8 text-gray-400" />
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  disabled={loading}
+                />
+                {loading && (
+                  <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+
+              <Button
+                variant="ghost"
+                className="text-[#0095F6] font-semibold"
+                onClick={() => document.querySelector('input[type="file"]')?.click()}
+                disabled={loading}
+              >
+                {profilePhoto ? 'Change photo' : 'Add photo'}
+              </Button>
             </motion.div>
           )}
 
@@ -185,38 +197,35 @@ const Onboarding = () => {
               animate="visible"
               exit="exit"
             >
-              <h1 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Select your interests</h1>
-              <p className="text-gray-500 mb-8">We'll help you find content based on what you like</p>
+              <div className="text-center mb-8">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                  What are you into?
+                </h1>
+                <p className="text-gray-600 text-base">
+                  Choose 3 or more categories so we can customize your experience.
+                </p>
+              </div>
               
-              <div className="grid grid-cols-2 gap-4 mb-10">
-                {interests.map((interest, index) => (
-                  <motion.div
+              <div className="grid grid-cols-2 gap-3 mb-8">
+                {interests.map((interest) => (
+                  <button
                     key={interest}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
+                    onClick={() => toggleInterest(interest)}
+                    className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                      selectedInterests.includes(interest)
+                        ? 'border-[#0095F6] bg-[#0095F6]/10'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
                   >
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Card
-                        className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-300 ${
-                          selectedInterests.includes(interest)
-                            ? 'border-purple-600 bg-purple-50 shadow-md shadow-purple-100'
-                            : 'border-gray-200'
-                        }`}
-                        onClick={() => toggleInterest(interest)}
-                      >
-                        <span>{interest}</span>
-                        {selectedInterests.includes(interest) && (
-                          <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </Card>
-                    </motion.div>
-                  </motion.div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-900">{interest}</span>
+                      {selectedInterests.includes(interest) && (
+                        <div className="w-5 h-5 rounded-full bg-[#0095F6] flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  </button>
                 ))}
               </div>
             </motion.div>
@@ -230,42 +239,37 @@ const Onboarding = () => {
               animate="visible"
               exit="exit"
             >
-              <h1 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Find people to follow</h1>
-              <p className="text-gray-500 mb-8">Follow people to see their photos and videos in your feed</p>
+              <div className="text-center mb-8">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                  Follow accounts you're interested in
+                </h1>
+                <p className="text-gray-600 text-base">
+                  Follow accounts to start seeing the photos and videos they share.
+                </p>
+              </div>
               
-              <div className="space-y-5 mb-10">
+              <div className="space-y-4">
                 {suggestedUsers.map((user) => (
-                  <motion.div
-                    key={user.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: user.id * 0.1 }}
-                  >
-                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                      <div className="flex items-center">
-                        <div className="relative">
-                          <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-purple-300 to-pink-300 opacity-60 blur-sm" />
-                          <img
-                            src={user.avatar}
-                            alt={user.username}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-white relative z-10"
-                          />
-                        </div>
-                        <div className="ml-3">
-                          <p className="font-medium text-gray-900">{user.username}</p>
-                          <p className="text-xs text-gray-500">Suggested for you</p>
-                        </div>
+                  <div key={user.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={user.avatar}
+                        alt={user.username}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <p className="font-medium text-gray-900">{user.username}</p>
+                        <p className="text-sm text-gray-500">Suggested for you</p>
                       </div>
-                      <Button
-                        variant="outline"
-                        className={`text-sm h-9 rounded-full px-5 ${user.followed ? 'bg-purple-50 text-purple-600 border-purple-300' : 'hover:bg-purple-50 hover:text-purple-600 hover:border-purple-300'} transition-colors`}
-                        onClick={() => handleFollow(user.id)}
-                        disabled={loading || user.followed}
-                      >
-                        {user.followed ? 'Following' : 'Follow'}
-                      </Button>
                     </div>
-                  </motion.div>
+                    <Button
+                      variant={user.followed ? "outline" : "default"}
+                      className={user.followed ? "border-gray-300" : "bg-[#0095F6] hover:bg-[#0095F6]/90"}
+                      size="sm"
+                    >
+                      {user.followed ? 'Following' : 'Follow'}
+                    </Button>
+                  </div>
                 ))}
               </div>
             </motion.div>
@@ -273,23 +277,15 @@ const Onboarding = () => {
         </AnimatePresence>
       </div>
 
-      <div className="p-6">
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-6 rounded-xl font-medium shadow-lg shadow-purple-100 transition-all duration-300"
-            onClick={handleNext}
-            disabled={loading}
-          >
-            {step === 3 ? (
-              "Get Started"
-            ) : (
-              <div className="flex items-center justify-center w-full">
-                Next
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </div>
-            )}
-          </Button>
-        </motion.div>
+      {/* Bottom button */}
+      <div className="p-6 border-t border-gray-200">
+        <Button
+          className="w-full bg-[#0095F6] hover:bg-[#0095F6]/90 text-white py-3 rounded-lg font-semibold"
+          onClick={handleNext}
+          disabled={loading || (step === 2 && selectedInterests.length < 3)}
+        >
+          {step === 3 ? 'Done' : 'Next'}
+        </Button>
       </div>
     </div>
   );

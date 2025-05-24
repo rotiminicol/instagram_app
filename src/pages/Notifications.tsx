@@ -1,103 +1,109 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { MobileNavbar } from '@/components/MobileNavbar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, BellOff, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { notificationService } from '../api/services';
 
 interface Notification {
   id: number;
-  type: 'like' | 'comment' | 'follow' | 'mention';
-  user: {
-    username: string;
-    avatar: string;
-    verified?: boolean;
-  };
-  content: string;
-  time: string;
-  postImage?: string;
-  read: boolean;
+  type: string;
+  recipient_user: number;
+  related_post?: number;
+  related_user?: number;
+  is_read: boolean;
+  created_at: string;
 }
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: 'like',
-      user: {
-        username: 'johndoe',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-        verified: true
-      },
-      content: 'liked your photo',
-      time: '2m',
-      postImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=100&h=100&fit=crop',
-      read: false,
-    },
-    {
-      id: 2,
-      type: 'follow',
-      user: {
-        username: 'sarahwilson',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b830?w=100&h=100&fit=crop&crop=face',
-      },
-      content: 'started following you',
-      time: '3h',
-      read: false,
-    },
-    {
-      id: 3,
-      type: 'comment',
-      user: {
-        username: 'alexjones',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
-        verified: true
-      },
-      content: 'commented on your photo: "Amazing shot!"',
-      time: '5h',
-      postImage: 'https://images.unsplash.com/photo-1500673922987-e212871fec22?w=100&h=100&fit=crop',
-      read: true,
-    },
-    {
-      id: 4,
-      type: 'mention',
-      user: {
-        username: 'emilydavis',
-        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face',
-      },
-      content: 'mentioned you in a comment: "@currentuser check this out!"',
-      time: '1d',
-      read: true,
-    },
-  ]);
-
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread'>('all');
   const [isClearing, setIsClearing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        console.log('Fetching notifications...');
+        const response = await notificationService.getNotifications();
+        console.log('Notifications response:', response.data);
+        setNotifications(response.data || []);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        // Fallback to mock data
+        setNotifications([
+          {
+            id: 1,
+            type: 'like',
+            recipient_user: 1,
+            related_post: 1,
+            related_user: 2,
+            is_read: false,
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 2,
+            type: 'follow',
+            recipient_user: 1,
+            related_user: 3,
+            is_read: false,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
 
   const filteredNotifications = notifications.filter(
-    notification => activeFilter === 'all' || !notification.read
+    notification => activeFilter === 'all' || !notification.is_read
   );
 
-  const markAsRead = (id: number) => {
-    setNotifications(
-      notifications.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-  };
-
-  const markAllAsRead = () => {
-    setIsClearing(true);
-    setTimeout(() => {
+  const markAsRead = async (id: number) => {
+    try {
+      await notificationService.markAsRead(id);
       setNotifications(
-        notifications.map(notification => ({ ...notification, read: true }))
+        notifications.map(notification =>
+          notification.id === id ? { ...notification, is_read: true } : notification
+        )
       );
-      setIsClearing(false);
-    }, 500);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const removeNotification = (id: number) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const markAllAsRead = async () => {
+    setIsClearing(true);
+    try {
+      const unreadNotifications = notifications.filter(n => !n.is_read);
+      await Promise.all(
+        unreadNotifications.map(notification => 
+          notificationService.markAsRead(notification.id)
+        )
+      );
+      
+      setNotifications(
+        notifications.map(notification => ({ ...notification, is_read: true }))
+      );
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    } finally {
+      setTimeout(() => setIsClearing(false), 500);
+    }
+  };
+
+  const removeNotification = async (id: number) => {
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifications(notifications.filter(n => n.id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -109,6 +115,24 @@ const Notifications = () => {
       default: return '🔔';
     }
   };
+
+  const getNotificationText = (notification: Notification) => {
+    switch (notification.type) {
+      case 'like': return 'liked your post';
+      case 'comment': return 'commented on your post';
+      case 'follow': return 'started following you';
+      case 'mention': return 'mentioned you in a comment';
+      default: return 'sent you a notification';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center pb-16">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-16 bg-gray-50 min-h-screen">
@@ -212,7 +236,7 @@ const Notifications = () => {
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.2 }}
                   className={`relative overflow-hidden rounded-xl ${
-                    notification.read ? 'bg-white' : 'bg-blue-50'
+                    notification.is_read ? 'bg-white' : 'bg-blue-50'
                   } shadow-sm`}
                 >
                   <div 
@@ -221,8 +245,8 @@ const Notifications = () => {
                   >
                     <div className="relative">
                       <img
-                        src={notification.user.avatar}
-                        alt={notification.user.username}
+                        src={`https://picsum.photos/50/50?random=${notification.related_user || 1}`}
+                        alt="User avatar"
                         className="w-12 h-12 rounded-full object-cover"
                       />
                       <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
@@ -230,38 +254,20 @@ const Notifications = () => {
                           {getNotificationIcon(notification.type)}
                         </div>
                       </div>
-                      {notification.user.verified && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-0.5">
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                          </svg>
-                        </div>
-                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">
-                        <span className="font-semibold">{notification.user.username}</span>{' '}
-                        {notification.content}
+                        <span className="font-semibold">User {notification.related_user}</span>{' '}
+                        {getNotificationText(notification)}
                       </p>
-                      <p className="text-xs text-gray-500">{notification.time}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(notification.created_at).toLocaleDateString()}
+                      </p>
                     </div>
-                    
-                    {notification.postImage && (
-                      <motion.div 
-                        className="w-12 h-12 rounded-lg overflow-hidden"
-                        whileHover={{ scale: 1.05 }}
-                      >
-                        <img
-                          src={notification.postImage}
-                          alt="Post"
-                          className="w-full h-full object-cover"
-                        />
-                      </motion.div>
-                    )}
                   </div>
                   
-                  {!notification.read && (
+                  {!notification.is_read && (
                     <motion.div 
                       className="absolute top-0 left-0 bottom-0 w-1 bg-blue-500"
                       initial={{ scaleY: 0 }}

@@ -1,183 +1,102 @@
-import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { gsap } from 'gsap';
-import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
 
-// Register GSAP plugins
-gsap.registerPlugin(MotionPathPlugin);
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const SplashScreen = () => {
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const logoRef = useRef<SVGSVGElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const dotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const tl = gsap.timeline({
-      defaults: { ease: 'power3.inOut' },
-      onComplete: () => navigate('/welcome')
-    });
+    const timer = setTimeout(() => {
+      navigate('/welcome');
+    }, 3000);
 
-    // Initial setup
-    gsap.set([logoRef.current, titleRef.current, dotRef.current], { opacity: 0 });
-    gsap.set(logoRef.current, { scale: 0.8, transformOrigin: 'center' });
-    gsap.set(dotRef.current, { y: 20 });
-
-    // Animation sequence
-    tl.to(logoRef.current, {
-      opacity: 1,
-      scale: 1.1,
-      duration: 0.6,
-      ease: 'back.out(1.7)'
-    })
-    .to(logoRef.current, {
-      scale: 1,
-      duration: 0.4
-    }, '+=0.2')
-    .to(titleRef.current, {
-      opacity: 1,
-      y: 0,
-      duration: 0.5
-    }, '-=0.3')
-    .to(dotRef.current, {
-      opacity: 1,
-      y: 0,
-      duration: 0.4
-    }, '-=0.2')
-    .to(containerRef.current, {
-      backgroundColor: '#ffffff',
-      duration: 0.8,
-      ease: 'power2.in'
-    }, '+=0.5')
-    .to([logoRef.current, titleRef.current], {
-      opacity: 0,
-      duration: 0.4
-    }, '-=0.6')
-    .to(dotRef.current, {
-      scale: 12,
-      opacity: 0,
-      duration: 0.8,
-      ease: 'power2.out'
-    });
-
-    // Particle effects
-    if (containerRef.current) {
-      createParticles(containerRef.current);
-    }
-
-    return () => {
-      tl.kill();
-    };
+    return () => clearTimeout(timer);
   }, [navigate]);
 
-  const createParticles = (container: HTMLDivElement) => {
-    const particleCount = 30;
-    const colors = ['#FFDD55', '#FF543E', '#C837AB', '#FFFFFF'];
-    
-    for (let i = 0; i < particleCount; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'absolute rounded-full';
-      
-      const size = Math.random() * 6 + 2;
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      
-      gsap.set(particle, {
-        width: size,
-        height: size,
-        backgroundColor: color,
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        opacity: 0
-      });
-      
-      container.appendChild(particle);
-      
-      // Animate particles
-      gsap.to(particle, {
-        opacity: 0.6,
-        y: `+=${(Math.random() - 0.5) * 100}`,
-        x: `+=${(Math.random() - 0.5) * 100}`,
-        duration: Math.random() * 3 + 2,
-        repeat: -1,
-        yoyo: true,
-        delay: Math.random() * 2
-      });
-    }
-  };
-
   return (
-    <div 
-      ref={containerRef}
-      className="h-screen w-full flex flex-col items-center justify-center bg-gradient-to-tr from-purple-500 via-pink-500 to-pink-400 overflow-hidden relative"
-    >
-      {/* Main logo with refined gradient and shadow */}
-      <div className="relative z-10 mb-8">
-        <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl transform scale-95"></div>
-        <svg 
-          ref={logoRef}
-          viewBox="0 0 48 48" 
-          fill="none" 
-          xmlns="http://www.w3.org/2000/svg" 
-          className="relative z-10 w-28 h-28 drop-shadow-lg"
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-white">
+      {/* Instagram Logo Animation */}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 1, ease: "easeOut" }}
+        className="mb-16"
+      >
+        <svg
+          width="175"
+          height="51"
+          viewBox="0 0 175 51"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="text-black"
         >
           <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M24 0C17.4903 0 16.6667 0.0276923 14.1077 0.144C11.5487 0.260308 9.80564 0.666615 8.27939 1.26C6.69128 1.88308 5.35354 2.69539 4.02667 4.02667C2.69538 5.35354 1.88308 6.69128 1.26 8.27939C0.666615 9.80564 0.260308 11.5487 0.144 14.1077C0.0276923 16.6667 0 17.4903 0 24C0 30.5097 0.0276923 31.3333 0.144 33.8923C0.260308 36.4513 0.666615 38.1944 1.26 39.7206C1.88308 41.3087 2.69539 42.6465 4.02667 43.9733C5.35354 45.3046 6.69128 46.1169 8.27939 46.74C9.80564 47.3334 11.5487 47.7397 14.1077 47.856C16.6667 47.9723 17.4903 48 24 48C30.5097 48 31.3333 47.9723 33.8923 47.856C36.4513 47.7397 38.1944 47.3334 39.7206 46.74C41.3087 46.1169 42.6465 45.3046 43.9733 43.9733C45.3046 42.6465 46.1169 41.3087 46.74 39.7206C47.3334 38.1944 47.7397 36.4513 47.856 33.8923C47.9723 31.3333 48 30.5097 48 24C48 17.4903 47.9723 16.6667 47.856 14.1077C47.7397 11.5487 47.3334 9.80564 46.74 8.27939C46.1169 6.69128 45.3046 5.35354 43.9733 4.02667C42.6465 2.69538 41.3087 1.88308 39.7206 1.26C38.1944 0.666615 36.4513 0.260308 33.8923 0.144C31.3333 0.0276923 30.5097 0 24 0Z"
-            fill="url(#paint0_radial)"
+            d="M6.5 0C2.9 0 0 2.9 0 6.5V44.5C0 48.1 2.9 51 6.5 51H44.5C48.1 51 51 48.1 51 44.5V6.5C51 2.9 48.1 0 44.5 0H6.5ZM25.5 12.75C30.9 12.75 38.25 13.26 38.25 25.5C38.25 37.74 30.9 38.25 25.5 38.25C20.1 38.25 12.75 37.74 12.75 25.5C12.75 13.26 20.1 12.75 25.5 12.75ZM25.5 17.85C22.44 17.85 17.85 18.36 17.85 25.5C17.85 32.64 22.44 33.15 25.5 33.15C28.56 33.15 33.15 32.64 33.15 25.5C33.15 18.36 28.56 17.85 25.5 17.85ZM39.78 12.75C41.31 12.75 42.84 14.28 42.84 15.81C42.84 17.34 41.31 18.87 39.78 18.87C38.25 18.87 36.72 17.34 36.72 15.81C36.72 14.28 38.25 12.75 39.78 12.75Z"
+            fill="currentColor"
           />
-          <defs>
-            <radialGradient
-              id="paint0_radial"
-              cx="0"
-              cy="0"
-              r="1"
-              gradientUnits="userSpaceOnUse"
-              gradientTransform="translate(12 48) rotate(-90) scale(48 48.0016)"
-            >
-              <stop offset="0%" stopColor="#FFDD55" />
-              <stop offset="25%" stopColor="#FFDD55" />
-              <stop offset="50%" stopColor="#FF543E" />
-              <stop offset="75%" stopColor="#C837AB" />
-              <stop offset="100%" stopColor="#833AB4" />
-            </radialGradient>
-          </defs>
+          <path
+            d="M57.3359 0.640625V50H62.8047V0.640625H57.3359Z"
+            fill="currentColor"
+          />
+          <path
+            d="M75.457 14.4531C81.5508 14.4531 85.7617 18.2422 85.7617 25.3203C85.7617 32.3984 81.5508 36.1875 75.457 36.1875C69.3633 36.1875 65.1523 32.3984 65.1523 25.3203C65.1523 18.2422 69.3633 14.4531 75.457 14.4531ZM75.457 19.1406C72.1133 19.1406 70.2148 21.4648 70.2148 25.3203C70.2148 29.1758 72.1133 31.5 75.457 31.5C78.8008 31.5 80.6992 29.1758 80.6992 25.3203C80.6992 21.4648 78.8008 19.1406 75.457 19.1406Z"
+            fill="currentColor"
+          />
+          <path
+            d="M97.2656 14.4531C101.902 14.4531 104.93 17.0977 104.93 21.2734V35.5H99.8672V22.2422C99.8672 19.8477 98.6367 18.8047 96.6602 18.8047C94.5742 18.8047 93.0977 20.1953 93.0977 22.8398V35.5H88.0352V15.1406H93.0977V17.457C94.2578 15.7734 96.2695 14.4531 97.2656 14.4531Z"
+            fill="currentColor"
+          />
+          <path
+            d="M116.402 14.4531C121.465 14.4531 124.598 17.1328 124.598 21.7344V35.5H119.535V32.6836C118.727 34.3672 116.785 36.1875 113.371 36.1875C109.301 36.1875 106.344 33.9609 106.344 30.3125C106.344 26.6289 109.512 24.5078 114.504 24.5078H119.535V21.8281C119.535 19.6016 118.129 18.6289 115.734 18.6289C113.23 18.6289 111.965 19.7539 111.965 21.4375H106.902C106.902 17.1328 110.457 14.4531 116.402 14.4531ZM119.535 27.7383H115.242C112.637 27.7383 111.441 28.6406 111.441 30.2422C111.441 31.8789 112.848 32.8164 115.242 32.8164C117.777 32.8164 119.535 31.1328 119.535 28.8359V27.7383Z"
+            fill="currentColor"
+          />
+          <path
+            d="M136.391 14.4531C140.355 14.4531 143.277 16.8125 144.367 20.2812L139.656 21.9648C139.023 19.8828 137.652 18.8047 135.793 18.8047C133.145 18.8047 131.281 21.2383 131.281 25.3203C131.281 29.4023 133.145 31.8359 135.793 31.8359C137.652 31.8359 139.023 30.7578 139.656 28.6758L144.367 30.3594C143.277 33.8281 140.355 36.1875 136.391 36.1875C129.98 36.1875 125.77 32.2617 125.77 25.3203C125.77 18.3789 129.98 14.4531 136.391 14.4531Z"
+            fill="currentColor"
+          />
+          <path
+            d="M155.527 14.4531C160.16 14.4531 163.188 17.0977 163.188 21.2734V35.5H158.125V22.2422C158.125 19.8477 156.895 18.8047 154.918 18.8047C152.832 18.8047 151.355 20.1953 151.355 22.8398V35.5H146.293V15.1406H151.355V17.457C152.516 15.7734 154.527 14.4531 155.527 14.4531Z"
+            fill="currentColor"
+          />
         </svg>
-      </div>
-      
-      {/* Title with subtle animation */}
-      <h1 
-        ref={titleRef}
-        className="text-white text-3xl font-bold tracking-tight drop-shadow-lg relative z-10"
-        style={{ fontFamily: "'Helvetica Neue', sans-serif", textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}
+      </motion.div>
+
+      {/* Loading animation */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 0.5 }}
+        className="flex flex-col items-center"
       >
-        Instagram
-      </h1>
-      
-      {/* Animated dot that expands into transition */}
-      <div 
-        ref={dotRef}
-        className="absolute bottom-12 w-3 h-3 bg-white rounded-full z-20"
-      />
-      
-      {/* Subtle background elements */}
-      <div className="absolute inset-0 overflow-hidden opacity-30">
-        {[...Array(5)].map((_, i) => (
-          <div 
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              width: `${Math.random() * 200 + 50}px`,
-              height: `${Math.random() * 200 + 50}px`,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              filter: 'blur(40px)',
-              opacity: 0.3
-            }}
-          />
-        ))}
-      </div>
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin mb-8"></div>
+        
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.5, duration: 0.5 }}
+          className="text-gray-600 text-sm"
+        >
+          from
+        </motion.p>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.7, duration: 0.5 }}
+          className="mt-1"
+        >
+          <svg width="61" height="16" viewBox="0 0 61 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M30.5 0C33.8137 0 36.5 2.68629 36.5 6V10C36.5 13.3137 33.8137 16 30.5 16C27.1863 16 24.5 13.3137 24.5 10V6C24.5 2.68629 27.1863 0 30.5 0Z" fill="#1877F2"/>
+            <path d="M8.5 2C9.32843 2 10 2.67157 10 3.5V12.5C10 13.3284 9.32843 14 8.5 14C7.67157 14 7 13.3284 7 12.5V3.5C7 2.67157 7.67157 2 8.5 2Z" fill="#1877F2"/>
+            <path d="M0.5 4C1.32843 4 2 4.67157 2 5.5V10.5C2 11.3284 1.32843 12 0.5 12C-0.328427 12 -1 11.3284 -1 10.5V5.5C-1 4.67157 -0.328427 4 0.5 4Z" fill="#1877F2"/>
+            <path d="M16.5 2C17.3284 2 18 2.67157 18 3.5V12.5C18 13.3284 17.3284 14 16.5 14C15.6716 14 15 13.3284 15 12.5V3.5C15 2.67157 15.6716 2 16.5 2Z" fill="#1877F2"/>
+            <path d="M44.5 2C45.3284 2 46 2.67157 46 3.5V12.5C46 13.3284 45.3284 14 44.5 14C43.6716 14 43 13.3284 43 12.5V3.5C43 2.67157 43.6716 2 44.5 2Z" fill="#1877F2"/>
+            <path d="M52.5 4C53.3284 4 54 4.67157 54 5.5V10.5C54 11.3284 53.3284 12 52.5 12C51.6716 12 51 11.3284 51 10.5V5.5C51 4.67157 51.6716 4 52.5 4Z" fill="#1877F2"/>
+            <path d="M60.5 2C61.3284 2 62 2.67157 62 3.5V12.5C62 13.3284 61.3284 14 60.5 14C59.6716 14 59 13.3284 59 12.5V3.5C59 2.67157 59.6716 2 60.5 2Z" fill="#1877F2"/>
+          </svg>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };

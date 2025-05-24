@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import CountUp from 'react-countup';
+import { authService, postService, followService } from '../api/services';
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
@@ -18,24 +19,19 @@ const Profile = () => {
     avatar: 'https://picsum.photos/100/100?random=1',
     cover: 'https://picsum.photos/1600/400?random=2',
     stats: {
-      posts: 127,
-      followers: 1452,
-      following: 568,
+      posts: 0,
+      followers: 0,
+      following: 0,
     },
   });
+  const [posts, setPosts] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<{ [key: number]: boolean }>({});
+  const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
 
   const coverOpacity = useTransform(scrollY, [0, 200], [1, 0.7]);
   const coverScale = useTransform(scrollY, [0, 200], [1, 1.1]);
-
-  const posts = Array(12).fill(0).map((_, index) => ({
-    id: index + 1,
-    image: `https://picsum.photos/300/300?random=${index + 3}`,
-    likes: Math.floor(Math.random() * 1000) + 100,
-    comments: Math.floor(Math.random() * 100) + 10,
-  }));
 
   const savedPosts = Array(6).fill(0).map((_, index) => ({
     id: index + 1,
@@ -44,17 +40,64 @@ const Profile = () => {
     comments: Math.floor(Math.random() * 50) + 5,
   }));
 
-  const handleSaveProfile = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        console.log('Fetching profile data...');
+        const [userResponse, postsResponse] = await Promise.all([
+          authService.getMe(),
+          postService.getPosts()
+        ]);
+
+        console.log('User data:', userResponse.data);
+        console.log('Posts data:', postsResponse.data);
+
+        const userData = userResponse.data;
+        setProfile(prev => ({
+          ...prev,
+          username: userData.username || prev.username,
+          name: userData.name || prev.name,
+          bio: userData.bio || prev.bio,
+          avatar: userData.profile_image || prev.avatar,
+          stats: {
+            posts: postsResponse.data?.length || 0,
+            followers: 0, // Will be updated when we implement followers count
+            following: 0, // Will be updated when we implement following count
+          }
+        }));
+
+        setPosts(postsResponse.data || []);
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
+
+  const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    setProfile((prev) => ({
-      ...prev,
-      name: formData.get('name') as string,
-      username: formData.get('username') as string,
-      bio: formData.get('bio') as string,
-      website: formData.get('website') as string,
-    }));
-    setShowEditProfile(false);
+    
+    try {
+      const updateData = {
+        name: formData.get('name') as string,
+        username: formData.get('username') as string,
+        bio: formData.get('bio') as string,
+      };
+
+      await authService.updateProfile(updateData);
+      
+      setProfile((prev) => ({
+        ...prev,
+        ...updateData,
+      }));
+      setShowEditProfile(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
   const handleLike = (postId: number) => {
@@ -82,6 +125,14 @@ const Profile = () => {
 
     return () => observer.disconnect();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-20 bg-gray-50 font-sans">
@@ -272,10 +323,9 @@ const Profile = () => {
                     onDoubleClick={() => handleLike(post.id)}
                   >
                     <img
-                      src={post.image}
+                      src={post.image || `https://picsum.photos/300/300?random=${post.id}`}
                       alt={`Post ${post.id}`}
                       className="w-full h-full object-cover lazy-load"
-                      data-src={post.image}
                       onError={(e) => (e.currentTarget.src = 'https://picsum.photos/300/300?random=0')}
                       loading="lazy"
                     />
@@ -290,18 +340,6 @@ const Profile = () => {
                         <Heart className="w-12 h-12 text-red-500 fill-red-500" />
                       </motion.div>
                     )}
-                    <div className="absolute bottom-2 right-2 flex items-center space-x-2 text-white text-xs">
-                      <span className="flex items-center">
-                        <Heart className="w-4 h-4 mr-1" fill={likedPosts[post.id] ? 'white' : 'none'} />
-                        {post.likes.toLocaleString()}
-                      </span>
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        {post.comments.toLocaleString()}
-                      </span>
-                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -321,18 +359,6 @@ const Profile = () => {
                       onError={(e) => (e.currentTarget.src = 'https://picsum.photos/300/300?random=0')}
                       loading="lazy"
                     />
-                    <div className="absolute bottom-2 right-2 flex items-center space-x-2 text-white text-xs">
-                      <span className="flex items-center">
-                        <Heart className="w-4 h-4 mr-1" />
-                        {post.likes.toLocaleString()}
-                      </span>
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        {post.comments.toLocaleString()}
-                      </span>
-                    </div>
                   </motion.div>
                 ))}
               </div>
